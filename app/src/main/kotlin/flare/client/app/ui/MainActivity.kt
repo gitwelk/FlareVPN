@@ -40,6 +40,8 @@ import flare.client.app.databinding.ItemAppSelectionBinding
 import flare.client.app.ui.adapter.ProfileAdapter
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import androidx.core.content.ContextCompat
 import androidx.core.content.res.ResourcesCompat
 import android.view.animation.DecelerateInterpolator
@@ -62,9 +64,14 @@ class MainActivity : AppCompatActivity() {
     private var selectedServerId: Int? = null
 
     private var isInitializingSettings = false
+    private var simpleEditor: flare.client.app.util.SimpleEditorManager? = null
     private var currentTabIndex = 1
 
     private var gradientAnimator: ValueAnimator? = null
+
+    
+    private var runtimeAccentColor: Int = COLOR_DEFAULT
+    private var runtimeAccentEndColor: Int = COLOR_DEFAULT_END
 
     private val vpnPermLauncher =
             registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -149,7 +156,8 @@ class MainActivity : AppCompatActivity() {
                 flare.client.app.R.id.layout_settings_subscriptions_container,
                 flare.client.app.R.id.layout_settings_theme_container,
                 flare.client.app.R.id.layout_custom_servers_container,
-                flare.client.app.R.id.toolbar_json
+                flare.client.app.R.id.toolbar_json,
+                flare.client.app.R.id.toolbar_simple
             )
             topPaddedViews.forEach { id ->
                 findViewById<View>(id)?.let { view ->
@@ -207,6 +215,9 @@ class MainActivity : AppCompatActivity() {
                         } else if (binding.layoutJsonEditor.visibility == View.VISIBLE) {
                             viewModel.setEditingProfile(null)
                             viewModel.setEditingSubscription(null)
+                        } else if (findViewById<View>(flare.client.app.R.id.layout_simple_editor)?.visibility == View.VISIBLE) {
+                            viewModel.setEditingProfile(null)
+                            viewModel.setEditingSubscription(null)
                         } else if (binding.layoutSettingsAdvancedContainer.root.visibility ==
                                         View.VISIBLE
                         ) {
@@ -258,10 +269,18 @@ class MainActivity : AppCompatActivity() {
         setupBottomNav()
         setupSettings()
         setupJsonEditor()
+        setupSimpleEditor()
         setupServers()
         observeViewModel()
         observeNotifications()
         restorePendingNavScreen()
+        
+        if (settings.isCustomColorEnabled) {
+            val (accent, accentEnd) = getColorsForKey(settings.accentColorKey)
+            runtimeAccentColor = accent
+            runtimeAccentEndColor = accentEnd
+            applyAccentColorsToUI(accent, accentEnd)
+        }
         if (themeChangedJustNow && settings.pendingNavScreen.isEmpty()) {
             themeChangedJustNow = false
             flare.client.app.ui.notification.AppNotificationManager.showNotification(
@@ -288,7 +307,24 @@ class MainActivity : AppCompatActivity() {
                         },
                         onEditProfileJson = { profile -> viewModel.setEditingProfile(profile) },
                         onEditSubscriptionJson = { sub -> viewModel.setEditingSubscription(sub) },
-                        onSubscriptionUpdate = { sub -> viewModel.refreshSubscription(sub) }
+                        onSubscriptionUpdate = { sub -> viewModel.refreshSubscription(sub) },
+                        onProfileLongClick = { profile -> 
+                            val link = flare.client.app.util.ProfileExportHelper.exportLink(profile)
+                            if (link != null) {
+                                val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                                val clip = android.content.ClipData.newPlainText("proxy_link", link)
+                                clipboard.setPrimaryClip(clip)
+                                showSnackbar("Ссылка скопирована")
+                                
+                                val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                                    type = "text/plain"
+                                    putExtra(Intent.EXTRA_TEXT, link)
+                                }
+                                startActivity(Intent.createChooser(shareIntent, "Поделиться ссылкой"))
+                            } else {
+                                showSnackbar("Не удалось сгенерировать ссылку")
+                            }
+                        }
                 )
         binding.rvProfiles.layoutManager = LinearLayoutManager(this)
         binding.rvProfiles.adapter = adapter
@@ -384,6 +420,27 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun setupSimpleEditor() {
+        val simpleView = binding.root.findViewById<View>(flare.client.app.R.id.layout_simple_editor)
+        if (simpleView != null) {
+            simpleEditor = flare.client.app.util.SimpleEditorManager(
+                view = simpleView,
+                onSave = { profile ->
+                    viewModel.updateProfileFull(profile)
+                    flare.client.app.ui.notification.AppNotificationManager.showNotification(
+                        flare.client.app.ui.notification.NotificationType.SUCCESS,
+                        getString(flare.client.app.R.string.json_edit_success, profile.name),
+                        3
+                    )
+                    viewModel.setEditingProfile(null)
+                },
+                onClose = {
+                    viewModel.setEditingProfile(null)
+                }
+            )
+        }
+    }
+
     private fun setupBottomNav() {
         binding.blurTarget.post {
             val blurTarget = binding.blurTarget as? BlurTarget
@@ -408,7 +465,7 @@ class MainActivity : AppCompatActivity() {
                     oldView.animate()
                         .translationX(if (isForward) -width else width)
                         .alpha(0f)
-                        .setDuration(450)
+                        .setDuration(250)
                         .setInterpolator(android.view.animation.AccelerateDecelerateInterpolator())
                         .withEndAction {
                             oldView.visibility = View.GONE
@@ -423,7 +480,7 @@ class MainActivity : AppCompatActivity() {
                     newView.animate()
                         .translationX(0f)
                         .alpha(1f)
-                        .setDuration(450)
+                        .setDuration(250)
                         .setInterpolator(android.view.animation.AccelerateDecelerateInterpolator())
                         .start()
                 }
@@ -652,7 +709,7 @@ class MainActivity : AppCompatActivity() {
         currentView.animate()
             .translationX(if (isForward) -width else width)
             .alpha(0f)
-            .setDuration(450)
+            .setDuration(250)
             .setInterpolator(android.view.animation.AccelerateDecelerateInterpolator())
             .withEndAction { currentView.visibility = View.GONE }
             .start()
@@ -663,7 +720,7 @@ class MainActivity : AppCompatActivity() {
         nextView.animate()
             .translationX(0f)
             .alpha(1f)
-            .setDuration(450)
+            .setDuration(250)
             .setInterpolator(android.view.animation.AccelerateDecelerateInterpolator())
             .start()
 
@@ -807,11 +864,16 @@ class MainActivity : AppCompatActivity() {
         serversBinding.btnFlareServers.setBackgroundResource(
             if (flareSelected) R.drawable.bg_server_card_selected else R.drawable.bg_server_card
         )
+        if (flareSelected) {
+            serversBinding.btnFlareServers.backgroundTintList = android.content.res.ColorStateList.valueOf(runtimeAccentColor)
+        } else {
+            serversBinding.btnFlareServers.backgroundTintList = null
+        }
         val flareContentColor = if (flareSelected) ContextCompat.getColor(this, R.color.white)
                                 else ContextCompat.getColor(this, R.color.text_primary)
         serversBinding.ivFlareIcon.imageTintList = android.content.res.ColorStateList.valueOf(
             if (flareSelected) ContextCompat.getColor(this, R.color.white)
-            else ContextCompat.getColor(this, R.color.accent)
+            else runtimeAccentColor
         )
         serversBinding.tvFlareTitle.setTextColor(flareContentColor)
         serversBinding.tvFlareDesc.setTextColor(if (flareSelected) ContextCompat.getColor(this, R.color.white) else ContextCompat.getColor(this, R.color.text_secondary))
@@ -820,11 +882,16 @@ class MainActivity : AppCompatActivity() {
         serversBinding.btnCreateServer.setBackgroundResource(
             if (createSelected) R.drawable.bg_server_card_selected else R.drawable.bg_server_card
         )
+        if (createSelected) {
+            serversBinding.btnCreateServer.backgroundTintList = android.content.res.ColorStateList.valueOf(runtimeAccentColor)
+        } else {
+            serversBinding.btnCreateServer.backgroundTintList = null
+        }
         val createContentColor = if (createSelected) ContextCompat.getColor(this, R.color.white)
                                  else ContextCompat.getColor(this, R.color.text_primary)
         serversBinding.ivCreateIcon.imageTintList = android.content.res.ColorStateList.valueOf(
             if (createSelected) ContextCompat.getColor(this, R.color.white)
-            else ContextCompat.getColor(this, R.color.accent)
+            else runtimeAccentColor
         )
         serversBinding.tvCreateTitle.setTextColor(createContentColor)
         serversBinding.tvCreateDesc.setTextColor(if (createSelected) ContextCompat.getColor(this, R.color.white) else ContextCompat.getColor(this, R.color.text_secondary))
@@ -1013,8 +1080,42 @@ class MainActivity : AppCompatActivity() {
 
         updateSplitTunnelingDesc()
 
-        baseInclude?.findViewById<View>(flare.client.app.R.id.btn_change_apps)?.setOnClickListener {
-            showAppSelectionDialog()
+        baseInclude?.findViewById<View>(flare.client.app.R.id.btn_change_apps)?.setOnClickListener { btn ->
+            val pb = baseInclude.findViewById<android.widget.ProgressBar>(flare.client.app.R.id.pb_change_apps_loading)
+            val button = btn as? androidx.appcompat.widget.AppCompatButton ?: return@setOnClickListener
+
+            pb?.visibility = View.VISIBLE
+            val originalText = button.text
+            button.text = ""
+            button.isEnabled = false
+
+            lifecycleScope.launch {
+                val apps = withContext(Dispatchers.Default) {
+                    val selectedPackages = settings.splitTunnelingApps.toMutableSet()
+                    val intent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
+                    packageManager.queryIntentActivities(intent, 0)
+                        .map { it.activityInfo.applicationInfo }
+                        .distinctBy { it.packageName }
+                        .filter {
+                            it.packageName == packageName || (it.flags and android.content.pm.ApplicationInfo.FLAG_SYSTEM == 0)
+                        }
+                        .map { appInfo ->
+                            AppListItem(
+                                packageName = appInfo.packageName,
+                                name = appInfo.loadLabel(packageManager).toString(),
+                                icon = appInfo.loadIcon(packageManager),
+                                isSelected = selectedPackages.contains(appInfo.packageName)
+                            )
+                        }
+                        .sortedBy { it.name }
+                }
+
+                pb?.visibility = View.GONE
+                button.text = originalText
+                button.isEnabled = true
+
+                showAppSelectionDialog(apps)
+            }
         }
 
         val swBestProfile = baseInclude?.findViewById<androidx.appcompat.widget.SwitchCompat>(flare.client.app.R.id.sw_best_profile)
@@ -1099,44 +1200,294 @@ class MainActivity : AppCompatActivity() {
                 )
                 flare.client.app.util.GlassUtils.showGlassMenu(view, items)
             }
+
+            val swUpdateCheck = baseInclude?.findViewById<androidx.appcompat.widget.SwitchCompat>(flare.client.app.R.id.sw_update_check)
+            val layoutUpdateSub = baseInclude?.findViewById<View>(flare.client.app.R.id.layout_update_check_sub)
+            val btnToggleUpdate = baseInclude?.findViewById<View>(flare.client.app.R.id.btn_toggle_update_check)
+            val blockUpdate = baseInclude?.findViewById<android.view.ViewGroup>(flare.client.app.R.id.block_update_check)
+            val btnFreq = baseInclude?.findViewById<View>(flare.client.app.R.id.btn_update_frequency)
+            val tvFreqValue = baseInclude?.findViewById<android.widget.TextView>(flare.client.app.R.id.tv_update_frequency_value)
+
+            if (swUpdateCheck != null && layoutUpdateSub != null && btnToggleUpdate != null && blockUpdate != null) {
+                swUpdateCheck.isChecked = settings.isUpdateCheckEnabled
+                layoutUpdateSub.visibility = if (settings.isUpdateCheckEnabled) View.VISIBLE else View.GONE
+                btnToggleUpdate.setBackgroundResource(
+                    if (settings.isUpdateCheckEnabled) flare.client.app.R.drawable.bg_grouped_top
+                    else flare.client.app.R.drawable.bg_grouped_all
+                )
+                tvFreqValue?.text = settings.updateCheckFrequency
+
+                swUpdateCheck.setOnCheckedChangeListener { _, isChecked ->
+                    settings.isUpdateCheckEnabled = isChecked
+                    android.transition.TransitionManager.beginDelayedTransition(
+                        blockUpdate,
+                        android.transition.AutoTransition().setDuration(200)
+                    )
+                    layoutUpdateSub.visibility = if (isChecked) View.VISIBLE else View.GONE
+                    btnToggleUpdate.setBackgroundResource(
+                        if (isChecked) flare.client.app.R.drawable.bg_grouped_top
+                        else flare.client.app.R.drawable.bg_grouped_all
+                    )
+                    viewModel.startUpdateCheckJob()
+                }
+
+                btnFreq?.setOnClickListener { view ->
+                    val options = listOf(
+                        getString(R.string.update_freq_daily),
+                        getString(R.string.update_freq_weekly),
+                        getString(R.string.update_freq_monthly)
+                    )
+                    val items = options.mapIndexed { index, text ->
+                        flare.client.app.util.GlassUtils.MenuItem(index, text) {
+                            settings.updateCheckFrequency = text
+                            tvFreqValue?.text = text
+                            viewModel.startUpdateCheckJob()
+                        }
+                    }
+                    flare.client.app.util.GlassUtils.showGlassMenu(view, items)
+                }
+            }
         }
     }
 
     private fun updateSplitTunnelingDesc() {
         val baseInclude = findViewById<View>(flare.client.app.R.id.layout_settings_base_container) ?: return
         val tvDesc = baseInclude.findViewById<android.widget.TextView>(flare.client.app.R.id.tv_split_tunneling_desc)
-        val count = settings.splitTunnelingApps.size
-        tvDesc?.text =
-                if (count > 0) {
-                    getString(flare.client.app.R.string.selected_apps_count, count)
-                } else {
-                    "Выберите приложения, которые будут использовать VPN."
-                }
+        val appsCount = settings.splitTunnelingApps.size
+        val sitesCount = settings.splitTunnelingSites.size
+
+        if (appsCount == 0 && sitesCount == 0) {
+            tvDesc?.text = getString(flare.client.app.R.string.split_tunneling_desc_default)
+            return
+        }
+
+        fun pluralApps(n: Int): String {
+            val mod10 = n % 10
+            val mod100 = n % 100
+            return when {
+                mod100 in 11..19 -> "приложений"
+                mod10 == 1       -> "приложение"
+                mod10 in 2..4    -> "приложения"
+                else             -> "приложений"
+            }
+        }
+
+        fun pluralSites(n: Int): String {
+            val mod10 = n % 10
+            val mod100 = n % 100
+            return when {
+                mod100 in 11..19 -> "сайтов"
+                mod10 == 1       -> "сайт"
+                mod10 in 2..4    -> "сайта"
+                else             -> "сайтов"
+            }
+        }
+
+        tvDesc?.text = buildString {
+            append("Выбрано ")
+            if (appsCount > 0) {
+                append("$appsCount ${pluralApps(appsCount)}")
+            }
+            if (appsCount > 0 && sitesCount > 0) {
+                append(" и ")
+            }
+            if (sitesCount > 0) {
+                append("$sitesCount ${pluralSites(sitesCount)}")
+            }
+        }
     }
 
-    private fun showAppSelectionDialog() {
+    private fun showAppSelectionDialog(allApps: List<AppListItem>) {
         val dialog = android.app.Dialog(this)
         val dialogBinding = flare.client.app.databinding.DialogAppSelectionBinding.inflate(layoutInflater)
         dialog.setContentView(dialogBinding.root)
         dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
 
+        if (settings.isCustomColorEnabled) {
+            applyAccentToViewTree(dialogBinding.root, runtimeAccentColor)
+        }
+
         val selectedPackages = settings.splitTunnelingApps.toMutableSet()
-        val intent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
-        val allApps = packageManager.queryIntentActivities(intent, 0)
-                        .map { it.activityInfo.applicationInfo }
-                        .distinctBy { it.packageName }
-                        .filter {
-                            it.packageName == packageName || (it.flags and android.content.pm.ApplicationInfo.FLAG_SYSTEM == 0)
+        val sitesSet = settings.splitTunnelingSites.toMutableSet()
+        
+        var currentTabIsApps = true
+        var tempModeApps = settings.splitTunnelingModeApps
+        var tempModeSites = settings.splitTunnelingModeSites
+
+        fun updateModeUI() {
+            val mode = if (currentTabIsApps) tempModeApps else tempModeSites
+            val textRes = if (mode == "whitelist") R.string.split_mode_whitelist else R.string.split_mode_blacklist
+            val tvModeValue = dialogBinding.root.findViewById<android.widget.TextView>(R.id.tv_mode_value)
+            tvModeValue?.text = getString(textRes)
+        }
+        
+        dialogBinding.root.findViewById<View>(R.id.btn_mode_selection)?.setOnClickListener { view ->
+            val items = listOf(
+                flare.client.app.util.GlassUtils.MenuItem(0, getString(R.string.split_mode_whitelist)) {
+                    if (currentTabIsApps) tempModeApps = "whitelist" else tempModeSites = "whitelist"
+                    updateModeUI()
+                },
+                flare.client.app.util.GlassUtils.MenuItem(1, getString(R.string.split_mode_blacklist)) {
+                    if (currentTabIsApps) tempModeApps = "blacklist" else tempModeSites = "blacklist"
+                    updateModeUI()
+                }
+            )
+            flare.client.app.util.GlassUtils.showGlassMenu(view, items)
+        }
+
+        val tabContainer = dialogBinding.root.findViewById<View>(R.id.tab_container)
+        val tabIndicator = dialogBinding.root.findViewById<flare.client.app.ui.widget.LiquidPillView>(R.id.tab_indicator)
+        val tabApps = dialogBinding.root.findViewById<android.widget.ImageView>(R.id.tab_apps)
+        val tabSites = dialogBinding.root.findViewById<android.widget.ImageView>(R.id.tab_sites)
+        val layoutApps = dialogBinding.root.findViewById<View>(R.id.layout_apps)
+        val layoutSites = dialogBinding.root.findViewById<View>(R.id.layout_sites)
+        val etSites = dialogBinding.root.findViewById<android.widget.EditText>(R.id.et_sites)
+        val tvDialogTitle = dialogBinding.root.findViewById<android.widget.TextView>(R.id.tv_dialog_title)
+        
+        etSites?.setText(sitesSet.joinToString("\n"))
+
+        val dp = resources.displayMetrics.density
+        var isDragging = false
+
+        fun updateTabVisuals(toApps: Boolean) {
+            val inactiveColor = androidx.core.content.ContextCompat.getColor(this@MainActivity, R.color.text_secondary)
+            val activeColor = androidx.core.content.ContextCompat.getColor(this@MainActivity, R.color.text_primary)
+            tabApps?.imageTintList = android.content.res.ColorStateList.valueOf(if (toApps) activeColor else inactiveColor)
+            tabSites?.imageTintList = android.content.res.ColorStateList.valueOf(if (!toApps) activeColor else inactiveColor)
+        }
+
+        fun switchTab(toApps: Boolean, animateIndicator: Boolean = true) {
+            if (currentTabIsApps == toApps && !isDragging) return
+            
+            val containerWidth = tabContainer?.width?.toFloat() ?: 0f
+            if (containerWidth > 0f) {
+                val halfW = containerWidth / 2f
+                val pad = 4 * dp
+                val tL = if (toApps) pad else halfW + pad
+                val tR = if (toApps) halfW - pad else containerWidth - pad
+
+                if (animateIndicator) {
+                    tabIndicator?.animateToBounds(tL, tR, 300)
+                } else {
+                    tabIndicator?.leftBound = tL
+                    tabIndicator?.rightBound = tR
+                    tabIndicator?.invalidate()
+                }
+            }
+            
+            updateTabVisuals(toApps)
+            tvDialogTitle?.text = getString(if (toApps) R.string.dialog_apps_title else R.string.dialog_domens_title)
+
+            val currentLayout = if (currentTabIsApps) layoutApps else layoutSites
+            val nextLayout = if (toApps) layoutApps else layoutSites
+            
+            if (currentTabIsApps != toApps && currentLayout?.visibility == View.VISIBLE) {
+                val parentWidth = (layoutApps?.parent as? View)?.width?.toFloat() ?: 500f
+                currentLayout.animate()?.translationX(if (toApps) parentWidth else -parentWidth)?.alpha(0f)?.setDuration(200)?.withEndAction {
+                    currentLayout.visibility = View.GONE
+                }?.start()
+                
+                nextLayout?.visibility = View.VISIBLE
+                nextLayout?.translationX = if (toApps) -parentWidth else parentWidth
+                nextLayout?.alpha = 0f
+                nextLayout?.animate()?.translationX(0f)?.alpha(1f)?.setDuration(200)?.start()
+            }
+            
+            currentTabIsApps = toApps
+            updateModeUI()
+        }
+
+        var dragStartX = 0f
+        var startBoundLeft = 0f
+        var startBoundRight = 0f
+        var isClick = false
+
+        tabContainer?.setOnTouchListener { v, event ->
+            val w = v.width.toFloat()
+            val pad = 4 * dp
+            val halfW = w / 2f
+            when (event.actionMasked) {
+                android.view.MotionEvent.ACTION_DOWN -> {
+                    val buf = 32 * dp
+                    val isOnIndicator = tabIndicator != null && event.x >= tabIndicator.leftBound - buf && event.x <= tabIndicator.rightBound + buf
+                    
+                    isDragging = isOnIndicator
+                    dragStartX = event.rawX
+                    isClick = true
+                    
+                    if (isDragging) {
+                        startBoundLeft = tabIndicator.leftBound
+                        startBoundRight = tabIndicator.rightBound
+                        tabIndicator.animateGlow(1.0f, 100)
+                        tabIndicator.animateExpansion(5f, 250)
+                    }
+                    v.parent?.requestDisallowInterceptTouchEvent(true)
+                    return@setOnTouchListener true
+                }
+                android.view.MotionEvent.ACTION_MOVE -> {
+                    val dx = event.rawX - dragStartX
+                    if (Math.abs(dx) > 5 * dp) isClick = false
+                    
+                    if (isDragging) {
+                        val stretch = (Math.abs(dx) * 0.05f).coerceAtMost(10 * dp)
+                        if (dx > 0) {
+                            tabIndicator?.leftBound = (startBoundLeft + dx).coerceAtLeast(pad)
+                            tabIndicator?.rightBound = (startBoundRight + dx + stretch).coerceAtMost(w - pad)
+                        } else {
+                            tabIndicator?.leftBound = (startBoundLeft + dx - stretch).coerceAtLeast(pad)
+                            tabIndicator?.rightBound = (startBoundRight + dx).coerceAtMost(w - pad)
                         }
-                        .map { appInfo ->
-                            AppListItem(
-                                    packageName = appInfo.packageName,
-                                    name = appInfo.loadLabel(packageManager).toString(),
-                                    icon = appInfo.loadIcon(packageManager),
-                                    isSelected = selectedPackages.contains(appInfo.packageName)
-                            )
-                        }
-                        .sortedBy { it.name }
+                        return@setOnTouchListener true
+                    }
+                }
+                android.view.MotionEvent.ACTION_UP, android.view.MotionEvent.ACTION_CANCEL -> {
+                    if (isDragging) {
+                        isDragging = false
+                        val center = ((tabIndicator?.leftBound ?: 0f) + (tabIndicator?.rightBound ?: 0f)) / 2f
+                        val toApps = center < halfW
+                        tabIndicator?.animateGlow(0f, 200)
+                        tabIndicator?.animateExpansion(0f, 250)
+                        switchTab(toApps, true)
+                        return@setOnTouchListener true
+                    } else if (isClick) {
+                        
+                        val toApps = event.x < halfW
+                        switchTab(toApps, true)
+                        return@setOnTouchListener true
+                    }
+                }
+            }
+            false
+        }
+
+        tabContainer?.viewTreeObserver?.addOnGlobalLayoutListener(object : android.view.ViewTreeObserver.OnGlobalLayoutListener {
+            override fun onGlobalLayout() {
+                val h = tabIndicator?.height?.toFloat() ?: 0f
+                val w = tabContainer.width.toFloat()
+                if (h > 0f && w > 0f) {
+                    tabContainer.viewTreeObserver.removeOnGlobalLayoutListener(this)
+                    tabIndicator!!.isCentered = true
+                    tabIndicator.pillHeight = h - (8 * dp)
+                    if (settings.isCustomColorEnabled) {
+                        tabIndicator.setAccentColors(runtimeAccentColor, runtimeAccentColor)
+                    } else {
+                        tabIndicator.updateShaders()
+                    }
+                    
+                    
+                    val halfW = w / 2f
+                    val pad = 4 * dp
+                    tabIndicator.leftBound  = if (currentTabIsApps) pad else halfW + pad
+                    tabIndicator.rightBound = if (currentTabIsApps) halfW - pad else w - pad
+                    tabIndicator.alpha = 1f
+                    tabIndicator.invalidate()
+                    updateTabVisuals(currentTabIsApps)
+                    updateModeUI()
+                }
+            }
+        })
+        
+        updateModeUI()
 
         if (allApps.size <= 1) {
             Snackbar.make(binding.root, "Список пуст. Проверьте разрешение на список приложений в настройках.", Snackbar.LENGTH_LONG)
@@ -1155,10 +1506,10 @@ class MainActivity : AppCompatActivity() {
                     else selectedPackages.remove(item.packageName)
                 }
 
-        dialogBinding.rvApps.layoutManager = LinearLayoutManager(this)
-        dialogBinding.rvApps.adapter = adapter
+        dialogBinding.root.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.rv_apps)?.layoutManager = LinearLayoutManager(this)
+        dialogBinding.root.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.rv_apps)?.adapter = adapter
 
-        dialogBinding.etSearchApps.addTextChangedListener(
+        dialogBinding.root.findViewById<android.widget.EditText>(R.id.et_search_apps)?.addTextChangedListener(
                 object : android.text.TextWatcher {
                     override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
                     override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
@@ -1169,9 +1520,13 @@ class MainActivity : AppCompatActivity() {
                 }
         )
 
-        dialogBinding.btnCancelApps.setOnClickListener { dialog.dismiss() }
-        dialogBinding.btnSaveApps.setOnClickListener {
+        dialogBinding.root.findViewById<View>(R.id.btn_cancel_apps)?.setOnClickListener { dialog.dismiss() }
+        dialogBinding.root.findViewById<View>(R.id.btn_save_apps)?.setOnClickListener {
             settings.splitTunnelingApps = selectedPackages
+            val finalSites = etSites?.text?.toString()?.split("\n")?.map { it.trim() }?.filter { it.isNotEmpty() }?.toSet() ?: emptySet()
+            settings.splitTunnelingSites = finalSites
+            settings.splitTunnelingModeApps = tempModeApps
+            settings.splitTunnelingModeSites = tempModeSites
             updateSplitTunnelingDesc()
             showSettingsNotification()
             dialog.dismiss()
@@ -1568,6 +1923,115 @@ class MainActivity : AppCompatActivity() {
         }
 
         updateAnimationUI()
+
+        
+        setupColorPickerSection(themeView)
+    }
+
+    private fun setupColorPickerSection(themeView: View) {
+        val swCustomColor = themeView.findViewById<androidx.appcompat.widget.SwitchCompat>(
+            flare.client.app.R.id.sw_custom_color
+        )
+        val layoutColorPicker = themeView.findViewById<View>(flare.client.app.R.id.layout_color_picker)
+        val dividerColorPicker = themeView.findViewById<View>(flare.client.app.R.id.divider_color_picker)
+        val btnToggle = themeView.findViewById<View>(flare.client.app.R.id.btn_toggle_custom_color)
+
+        val btnMaterialYou = themeView.findViewById<View>(flare.client.app.R.id.btn_color_material_you)
+        val btnGreen       = themeView.findViewById<View>(flare.client.app.R.id.btn_color_green)
+        val btnPurple      = themeView.findViewById<View>(flare.client.app.R.id.btn_color_purple)
+        val btnRed         = themeView.findViewById<View>(flare.client.app.R.id.btn_color_red)
+        val btnPink        = themeView.findViewById<View>(flare.client.app.R.id.btn_color_pink)
+        val btnOrange      = themeView.findViewById<View>(flare.client.app.R.id.btn_color_orange)
+
+        val density = resources.displayMetrics.density
+
+        
+        fun refreshColorCircles(selectedKey: String) {
+            val buttonsMap = mapOf(
+                "material_you" to btnMaterialYou,
+                "green"        to btnGreen,
+                "purple"       to btnPurple,
+                "red"          to btnRed,
+                "pink"         to btnPink,
+                "orange"       to btnOrange
+            )
+            buttonsMap.forEach { (key, btn) ->
+                val color = getColorsForKey(key).first
+                val isSelected = key == selectedKey
+                val shape = android.graphics.drawable.GradientDrawable()
+                if (isSelected) {
+                    shape.shape = android.graphics.drawable.GradientDrawable.RECTANGLE
+                    shape.cornerRadius = 14 * density
+                    
+                    shape.setStroke((2.5 * density).toInt(), android.graphics.Color.WHITE)
+                } else {
+                    shape.shape = android.graphics.drawable.GradientDrawable.OVAL
+                }
+                shape.setColor(color)
+                btn?.background = shape
+            }
+        }
+
+        
+        val enabled = settings.isCustomColorEnabled
+        swCustomColor?.isChecked = enabled
+        layoutColorPicker?.visibility = if (enabled) View.VISIBLE else View.GONE
+        dividerColorPicker?.visibility = if (enabled) View.VISIBLE else View.GONE
+        btnToggle?.setBackgroundResource(
+            if (enabled) flare.client.app.R.drawable.bg_grouped_middle
+            else flare.client.app.R.drawable.bg_grouped_bottom
+        )
+
+        
+        refreshColorCircles(if (enabled) settings.accentColorKey else "")
+
+        
+        btnToggle?.setOnClickListener { swCustomColor?.toggle() }
+
+        swCustomColor?.setOnCheckedChangeListener { _, isChecked ->
+            settings.isCustomColorEnabled = isChecked
+            android.transition.TransitionManager.beginDelayedTransition(
+                themeView as android.view.ViewGroup,
+                android.transition.AutoTransition().setDuration(250)
+            )
+            layoutColorPicker?.visibility = if (isChecked) View.VISIBLE else View.GONE
+            dividerColorPicker?.visibility = if (isChecked) View.VISIBLE else View.GONE
+            btnToggle?.setBackgroundResource(
+                if (isChecked) flare.client.app.R.drawable.bg_grouped_middle
+                else flare.client.app.R.drawable.bg_grouped_bottom
+            )
+            if (isChecked) {
+                
+                val saved = settings.accentColorKey
+                val key = if (saved.isBlank() || saved == "default") "material_you" else saved
+                settings.accentColorKey = key          
+                refreshColorCircles(key)
+                val (accent, accentEnd) = getColorsForKey(key)
+                animateAccentChange(accent, accentEnd)
+            } else {
+                settings.accentColorKey = ""           
+                refreshColorCircles("")
+                animateAccentChange(COLOR_DEFAULT, COLOR_DEFAULT_END)
+                binding.bottomNav.resetAccentColors()
+                val baseInclude = findViewById<View>(flare.client.app.R.id.layout_settings_base_container)
+                baseInclude?.findViewById<View>(flare.client.app.R.id.btn_change_apps)
+                    ?.backgroundTintList = null
+            }
+        }
+
+        fun onColorSelected(key: String) {
+            settings.accentColorKey = key
+            refreshColorCircles(key)
+            val (accent, accentEnd) = getColorsForKey(key)
+            animateAccentChange(accent, accentEnd)
+        }
+
+        btnMaterialYou?.setOnClickListener { onColorSelected("material_you") }
+        btnGreen?.setOnClickListener       { onColorSelected("green") }
+        btnPurple?.setOnClickListener      { onColorSelected("purple") }
+        btnRed?.setOnClickListener         { onColorSelected("red") }
+        btnPink?.setOnClickListener        { onColorSelected("pink") }
+        btnOrange?.setOnClickListener      { onColorSelected("orange") }
     }
 
     private fun applyThemeWithAnimation(triggerView: View) {
@@ -1766,6 +2230,122 @@ class MainActivity : AppCompatActivity() {
         androidx.appcompat.app.AppCompatDelegate.setDefaultNightMode(mode)
     }
 
+    
+
+    
+    private fun getColorsForKey(key: String): Pair<Int, Int> = when (key) {
+        "material_you" -> getMaterialYouColors()
+        "green"  -> Pair(COLOR_GREEN,  COLOR_GREEN_END)
+        "purple" -> Pair(COLOR_PURPLE, COLOR_PURPLE_END)
+        "red"    -> Pair(COLOR_RED,    COLOR_RED_END)
+        "pink"   -> Pair(COLOR_PINK,   COLOR_PINK_END)
+        "orange" -> Pair(COLOR_ORANGE, COLOR_ORANGE_END)
+        else     -> Pair(COLOR_DEFAULT, COLOR_DEFAULT_END)
+    }
+
+    
+    private fun getMaterialYouColors(): Pair<Int, Int> {
+        return if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+            
+            val primary   = resources.getColor(android.R.color.system_accent1_500, theme)
+            val secondary = resources.getColor(android.R.color.system_accent2_500, theme)
+            Pair(primary, secondary)
+        } else if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O_MR1) {
+            
+            try {
+                val wm = android.app.WallpaperManager.getInstance(this)
+                val wc = wm.getWallpaperColors(android.app.WallpaperManager.FLAG_SYSTEM)
+                val primary   = wc?.primaryColor?.toArgb()   ?: COLOR_DEFAULT
+                val secondary = wc?.secondaryColor?.toArgb() ?: COLOR_DEFAULT_END
+                Pair(primary, secondary)
+            } catch (e: Exception) {
+                Pair(COLOR_DEFAULT, COLOR_DEFAULT_END)
+            }
+        } else {
+            
+            Pair(COLOR_DEFAULT, COLOR_DEFAULT_END)
+        }
+    }
+
+    
+    private fun animateAccentChange(targetAccent: Int, targetAccentEnd: Int) {
+        val fromAccent    = runtimeAccentColor
+        val fromAccentEnd = runtimeAccentEndColor
+        val evaluator = ArgbEvaluator()
+        ValueAnimator.ofFloat(0f, 1f).apply {
+            duration = 350
+            interpolator = android.view.animation.DecelerateInterpolator()
+            addUpdateListener { anim ->
+                val f = anim.animatedFraction
+                val blend    = evaluator.evaluate(f, fromAccent,    targetAccent)    as Int
+                val blendEnd = evaluator.evaluate(f, fromAccentEnd, targetAccentEnd) as Int
+                runtimeAccentColor    = blend
+                runtimeAccentEndColor = blendEnd
+                applyAccentColorsToUI(blend, blendEnd)
+            }
+            start()
+        }
+        runtimeAccentColor    = targetAccent
+        runtimeAccentEndColor = targetAccentEnd
+    }
+
+    
+    private fun applyAccentColorsToUI(accent: Int, accentEnd: Int) {
+        val root = window.decorView
+        applyAccentToViewTree(root, accent)
+
+        
+        
+        if (settings.isCustomColorEnabled) {
+            binding.bottomNav.setAccentColors(accent, accentEnd)
+
+            val baseInclude = findViewById<View>(flare.client.app.R.id.layout_settings_base_container)
+            val btnChangeApps = baseInclude?.findViewById<View>(flare.client.app.R.id.btn_change_apps)
+            btnChangeApps?.backgroundTintList = android.content.res.ColorStateList.valueOf(accent)
+        }
+    }
+
+    private fun applyAccentToViewTree(view: View, accent: Int) {
+        if (view.tag == "accent_text" && view is android.widget.TextView) {
+            view.setTextColor(accent)
+        } else if (view.tag == "accent_tint" && view is android.widget.ImageView) {
+            view.imageTintList = android.content.res.ColorStateList.valueOf(accent)
+        } else if (view.tag == "accent_bg") {
+            val bg = view.background?.mutate()
+            if (bg is android.graphics.drawable.GradientDrawable) {
+                bg.setStroke((1 * view.resources.displayMetrics.density).toInt(), accent)
+                bg.setColor(androidx.core.graphics.ColorUtils.setAlphaComponent(accent, 13))
+                view.background = bg
+            }
+        }
+
+        when (view) {
+            is androidx.appcompat.widget.SwitchCompat -> {
+                val trackCsl = android.content.res.ColorStateList(
+                    arrayOf(
+                        intArrayOf(android.R.attr.state_checked),
+                        intArrayOf()
+                    ),
+                    intArrayOf(
+                        accent,
+                        android.graphics.Color.argb(80, 128, 128, 128)
+                    )
+                )
+                view.trackTintList = trackCsl
+            }
+            is com.google.android.material.slider.Slider -> {
+                val csl = android.content.res.ColorStateList.valueOf(accent)
+                view.thumbTintList = csl
+                view.trackActiveTintList = csl
+            }
+            is ViewGroup -> {
+                for (i in 0 until view.childCount) {
+                    applyAccentToViewTree(view.getChildAt(i), accent)
+                }
+            }
+        }
+    }
+
     private fun showPopupMenu(view: View, options: List<String>, onSelected: (String) -> Unit) {
         val items = options.mapIndexed { index, text ->
             flare.client.app.util.GlassUtils.MenuItem(index, text) {
@@ -1910,16 +2490,26 @@ class MainActivity : AppCompatActivity() {
         lifecycleScope.launch {
             viewModel.editingProfile.collect { profile ->
                 if (profile != null) {
-                    binding.bottomNav.hide()
-                    binding.layoutJsonEditor.visibility = View.VISIBLE
-                    binding.tvJsonTitle.text = profile.name
-                    binding.etJsonProfileName.setText(profile.name)
-                    if (binding.etJsonContent.text.toString() != profile.configJson) {
-                        binding.etJsonContent.setText(profile.configJson)
+                    if (!profile.uri.startsWith("internal://json")) {
+                        binding.bottomNav.hide()
+                        binding.layoutJsonEditor.visibility = View.GONE
+                        val simpleView = findViewById<View>(flare.client.app.R.id.layout_simple_editor)
+                        simpleView?.visibility = View.VISIBLE
+                        simpleEditor?.bind(profile)
+                    } else {
+                        binding.bottomNav.hide()
+                        findViewById<View>(flare.client.app.R.id.layout_simple_editor)?.visibility = View.GONE
+                        binding.layoutJsonEditor.visibility = View.VISIBLE
+                        binding.tvJsonTitle.text = profile.name
+                        binding.etJsonProfileName.setText(profile.name)
+                        if (binding.etJsonContent.text.toString() != profile.configJson) {
+                            binding.etJsonContent.setText(profile.configJson)
+                        }
                     }
                 } else if (viewModel.editingSubscription.value == null) {
                     binding.bottomNav.show()
                     binding.layoutJsonEditor.visibility = View.GONE
+                    findViewById<View>(flare.client.app.R.id.layout_simple_editor)?.visibility = View.GONE
                     val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
                     imm.hideSoftInputFromWindow(binding.etJsonContent.windowToken, 0)
                 }
@@ -1944,6 +2534,10 @@ class MainActivity : AppCompatActivity() {
             val params = window.attributes
             params.width = (resources.displayMetrics.widthPixels * 0.9).toInt()
             window.attributes = params
+        }
+
+        if (settings.isCustomColorEnabled) {
+            applyAccentToViewTree(dialogBinding.root, runtimeAccentColor)
         }
 
         dialogBinding.etSubName.setText(sub.name)
@@ -2261,5 +2855,19 @@ class MainActivity : AppCompatActivity() {
         private var lastUiMode: Int = -1
         private var themeChangedJustNow: Boolean = false
         private var lastThemeChangeTime: Long = 0
+
+        
+        const val COLOR_DEFAULT     = 0xFF5B8CFF.toInt()
+        const val COLOR_DEFAULT_END = 0xFFA066FF.toInt()
+        const val COLOR_GREEN       = 0xFF34C759.toInt()
+        const val COLOR_GREEN_END   = 0xFF25A244.toInt()
+        const val COLOR_PURPLE      = 0xFF9B59B6.toInt()
+        const val COLOR_PURPLE_END  = 0xFFBF8FFF.toInt()
+        const val COLOR_RED         = 0xFFFF453A.toInt()
+        const val COLOR_RED_END     = 0xFFFF6B6B.toInt()
+        const val COLOR_PINK        = 0xFFFF375F.toInt()
+        const val COLOR_PINK_END    = 0xFFFF6FA1.toInt()
+        const val COLOR_ORANGE      = 0xFFFF9F0A.toInt()
+        const val COLOR_ORANGE_END  = 0xFFFFB340.toInt()
     }
 }

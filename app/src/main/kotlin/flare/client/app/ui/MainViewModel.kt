@@ -24,7 +24,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
@@ -130,6 +129,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch { _selectedProfileId.value = repository.getSelectedProfile()?.id }
         startAutoUpdateJob()
         startBestProfileJob()
+        startUpdateCheckJob()
     }
 
     override fun onCleared() {
@@ -214,6 +214,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun setEditingSubscription(s: SubscriptionEntity?) { _editingSubscription.value = s; _editingProfile.value = null }
     fun updateProfileConfig(id: Long, json: String) { viewModelScope.launch(Dispatchers.IO) { repository.updateProfileConfig(id, json) } }
     fun updateProfile(id: Long, name: String, json: String) { viewModelScope.launch(Dispatchers.IO) { repository.updateProfile(id, name, json) } }
+    fun updateProfileFull(profile: ProfileEntity) { viewModelScope.launch(Dispatchers.IO) { repository.updateProfileFull(profile) } }
+    fun deleteProfile(id: Long) { viewModelScope.launch(Dispatchers.IO) { repository.deleteProfile(id) } }
     fun updateSubscription(id: Long, name: String, url: String) {
         viewModelScope.launch(Dispatchers.IO) {
             repository.updateSubscription(id, name, url)
@@ -564,6 +566,49 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             obj.toString().replace("\\/", "/")
         } catch (e: Exception) {
             json
+        }
+    }
+
+    private var updateCheckJob: kotlinx.coroutines.Job? = null
+
+    fun startUpdateCheckJob() {
+        val app = getApplication<Application>()
+        val settings = SettingsManager(app)
+        updateCheckJob?.cancel()
+        if (!settings.isUpdateCheckEnabled) return
+
+        updateCheckJob = viewModelScope.launch(Dispatchers.IO) {
+            
+            val jitterMs = (1L + (Math.random() * 59).toLong()) * 1000L
+            delay(jitterMs)
+
+            if (isActive) {
+                flare.client.app.util.VersionManager.checkUpdates(app)
+                settings.lastUpdateCheckTime = System.currentTimeMillis()
+            }
+
+            
+            while (isActive) {
+                val intervalHours = when (settings.updateCheckFrequency) {
+                    app.getString(R.string.update_freq_daily) -> 24L
+                    app.getString(R.string.update_freq_weekly) -> 168L
+                    app.getString(R.string.update_freq_monthly) -> 720L
+                    else -> 24L
+                }
+                val intervalMs = intervalHours * 3600 * 1000L
+                val lastCheck = settings.lastUpdateCheckTime
+                val now = System.currentTimeMillis()
+                val delayTime = (lastCheck + intervalMs) - now
+
+                if (delayTime > 0) {
+                    delay(delayTime)
+                }
+
+                if (isActive) {
+                    flare.client.app.util.VersionManager.checkUpdates(app)
+                    settings.lastUpdateCheckTime = System.currentTimeMillis()
+                }
+            }
         }
     }
 }

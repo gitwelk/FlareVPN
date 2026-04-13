@@ -42,6 +42,18 @@ class SettingsManager(context: Context) {
         get() = prefs.getStringSet("split_tunneling_apps", emptySet()) ?: emptySet()
         set(value) = prefs.edit().putStringSet("split_tunneling_apps", value).apply()
 
+    var splitTunnelingSites: Set<String>
+        get() = prefs.getStringSet("split_tunneling_sites", emptySet()) ?: emptySet()
+        set(value) = prefs.edit().putStringSet("split_tunneling_sites", value).apply()
+
+    var splitTunnelingModeApps: String
+        get() = prefs.getString("split_tunneling_mode_apps", "whitelist") ?: "whitelist"
+        set(value) = prefs.edit().putString("split_tunneling_mode_apps", value).apply()
+
+    var splitTunnelingModeSites: String
+        get() = prefs.getString("split_tunneling_mode_sites", "blacklist") ?: "blacklist"
+        set(value) = prefs.edit().putString("split_tunneling_mode_sites", value).apply()
+
     var tunStack: String
         get() = prefs.getString("tun_stack", "mixed") ?: "mixed"
         set(value) = prefs.edit().putString("tun_stack", value).apply()
@@ -128,4 +140,25 @@ class SettingsManager(context: Context) {
     var isOnboardingCompleted: Boolean
         get() = prefs.getBoolean("onboarding_completed", false)
         set(value) = prefs.edit().putBoolean("onboarding_completed", value).apply()
+
+    var isUpdateCheckEnabled: Boolean
+        get() = prefs.getBoolean("update_check_enabled", false)
+        set(value) = prefs.edit().putBoolean("update_check_enabled", value).apply()
+
+    var updateCheckFrequency: String
+        get() = prefs.getString("update_check_frequency", "Ежедневно") ?: "Ежедневно"
+        set(value) = prefs.edit().putString("update_check_frequency", value).apply()
+
+    var lastUpdateCheckTime: Long
+        get() = prefs.getLong("last_update_check_time", 0L)
+        set(value) = prefs.edit().putLong("last_update_check_time", value).apply()
+
+    var isCustomColorEnabled: Boolean
+        get() = prefs.getBoolean("custom_color_enabled", false)
+        set(value) = prefs.edit().putBoolean("custom_color_enabled", value).apply()
+
+    
+    var accentColorKey: String
+        get() = prefs.getString("accent_color_key", "default") ?: "default"
+        set(value) = prefs.edit().putString("accent_color_key", value).apply()
 }

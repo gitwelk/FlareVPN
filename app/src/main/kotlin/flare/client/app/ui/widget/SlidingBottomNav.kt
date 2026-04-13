@@ -44,6 +44,15 @@ class LiquidPillView @JvmOverloads constructor(
         strokeWidth = 1.5f * dp
     }
     private val glowPaint = Paint(Paint.ANTI_ALIAS_FLAG)
+
+    
+    private var accentStartColor: Int = DEFAULT_START
+    private var accentEndColor:   Int = DEFAULT_END
+
+    companion object {
+        val DEFAULT_START: Int = Color.argb(255, 80, 200, 255)
+        val DEFAULT_END:   Int = Color.argb(255,  0, 100, 255)
+    }
     private val rect = RectF()
     private val glowRect = RectF()
 
@@ -54,6 +63,8 @@ class LiquidPillView @JvmOverloads constructor(
     var pillHeight = 0f
     var glowAlpha = 0f
     var verticalExpansion = 0f
+        set(value) { field = value; invalidate() }
+    var isCentered: Boolean = false
         set(value) { field = value; invalidate() }
     private val glowCorePaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val glowOuterPaint = Paint(Paint.ANTI_ALIAS_FLAG)
@@ -67,9 +78,20 @@ class LiquidPillView @JvmOverloads constructor(
         updateShaders()
     }
 
+    
+    fun setAccentColors(startColor: Int, endColor: Int) {
+        accentStartColor = startColor
+        accentEndColor   = endColor
+        updateShaders()
+        invalidate()
+    }
+
     internal fun updateShaders() {
         val h = pillHeight.takeIf { it > 0 } ?: return
         val nightMode = isNightMode
+
+        val aStart = accentStartColor
+        val aEnd   = accentEndColor
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             pillPaint.blendMode = if (nightMode) android.graphics.BlendMode.SCREEN
@@ -82,28 +104,34 @@ class LiquidPillView @JvmOverloads constructor(
 
         pillPaint.shader = LinearGradient(
             0f, 0f, 0f, h,
-            intArrayOf(Color.argb(220, 80, 200, 255), Color.argb(245, 0, 100, 255)),
+            intArrayOf(
+                Color.argb(220, Color.red(aStart), Color.green(aStart), Color.blue(aStart)),
+                Color.argb(245, Color.red(aEnd),   Color.green(aEnd),   Color.blue(aEnd))
+            ),
             null, Shader.TileMode.CLAMP
         )
 
+        
+        val rE = Color.red(aEnd); val gE = Color.green(aEnd); val bE = Color.blue(aEnd)
         if (nightMode) {
             pillBorderPaint.shader = LinearGradient(
                 0f, 0f, 0f, h,
                 intArrayOf(
                     Color.argb(200, 255, 255, 255),
-                    Color.argb(40, 255, 255, 255),
-                    Color.argb(80, 0, 120, 255)
+                    Color.argb(40,  255, 255, 255),
+                    Color.argb(80,  rE,  gE,  bE)
                 ),
                 floatArrayOf(0f, 0.45f, 1f),
                 Shader.TileMode.CLAMP
             )
         } else {
+            val rS = Color.red(aStart); val gS = Color.green(aStart); val bS = Color.blue(aStart)
             pillBorderPaint.shader = LinearGradient(
                 0f, 0f, 0f, h,
                 intArrayOf(
-                    Color.argb(180, 120, 200, 255),
-                    Color.argb(60, 60, 140, 255),
-                    Color.argb(100, 0, 80, 200)
+                    Color.argb(180, rS, gS, bS),
+                    Color.argb(60,  rE, gE, bE),
+                    Color.argb(100, rE, gE, bE)
                 ),
                 floatArrayOf(0f, 0.45f, 1f),
                 Shader.TileMode.CLAMP
@@ -119,7 +147,7 @@ class LiquidPillView @JvmOverloads constructor(
     override fun onDraw(canvas: Canvas) {
         if (leftBound >= rightBound || pillHeight <= 0) return
 
-        val cy = height - (32f * dp)
+        val cy = if (isCentered) height / 2f else height - (32f * dp)
         val expansion = verticalExpansion * dp
         val halfH = (pillHeight / 2f) + expansion
         val radius = halfH
@@ -131,7 +159,10 @@ class LiquidPillView @JvmOverloads constructor(
         glowOuterPaint.shader = RadialGradient(
             rect.centerX(), rect.centerY(),
             glowRect.width() * 0.6f,
-            intArrayOf(Color.argb((50 * effectiveGlowAlpha).toInt(), 0, 100, 255), Color.argb(0, 0, 100, 255)),
+            intArrayOf(
+                Color.argb((50 * effectiveGlowAlpha).toInt(), Color.red(accentEndColor), Color.green(accentEndColor), Color.blue(accentEndColor)),
+                Color.argb(0, Color.red(accentEndColor), Color.green(accentEndColor), Color.blue(accentEndColor))
+            ),
             null, Shader.TileMode.CLAMP
         )
         canvas.drawRoundRect(glowRect, radius + ambientMargin, radius + ambientMargin, glowOuterPaint)
@@ -142,7 +173,10 @@ class LiquidPillView @JvmOverloads constructor(
             glowCorePaint.shader = RadialGradient(
                 rect.centerX(), rect.centerY(),
                 glowRect.width() * 0.5f,
-                intArrayOf(Color.argb((180 * glowAlpha).toInt(), 100, 230, 255), Color.argb(0, 20, 120, 255)),
+                intArrayOf(
+                    Color.argb((180 * glowAlpha).toInt(), Color.red(accentStartColor), Color.green(accentStartColor), Color.blue(accentStartColor)),
+                    Color.argb(0, Color.red(accentEndColor), Color.green(accentEndColor), Color.blue(accentEndColor))
+                ),
                 null, Shader.TileMode.CLAMP
             )
             canvas.drawRoundRect(glowRect, radius + coreMargin, radius + coreMargin, glowCorePaint)
@@ -150,7 +184,10 @@ class LiquidPillView @JvmOverloads constructor(
 
         pillPaint.shader = LinearGradient(
             0f, rect.top, 0f, rect.bottom,
-            intArrayOf(Color.argb(255, 80, 200, 255), Color.argb(255, 0, 100, 255)),
+            intArrayOf(
+                Color.argb(255, Color.red(accentStartColor), Color.green(accentStartColor), Color.blue(accentStartColor)),
+                Color.argb(255, Color.red(accentEndColor),   Color.green(accentEndColor),   Color.blue(accentEndColor))
+            ),
             null, Shader.TileMode.CLAMP
         )
         canvas.drawRoundRect(rect, radius, radius, pillPaint)
@@ -269,7 +306,7 @@ class SlidingBottomNav @JvmOverloads constructor(
         try {
             val windowBg = (context as? android.app.Activity)?.window?.decorView?.background
             val builder = glassBlurView.setupWith(blurTarget)
-                .setBlurRadius(8f)
+                .setBlurRadius(3f) 
 
             if (windowBg != null) {
                 builder.setFrameClearDrawable(windowBg)
@@ -565,5 +602,15 @@ class SlidingBottomNav @JvmOverloads constructor(
             .setDuration(300)
             .setStartDelay(200)
             .start()
+    }
+
+    
+    fun setAccentColors(startColor: Int, endColor: Int) {
+        liquidPill.setAccentColors(startColor, endColor)
+    }
+
+    
+    fun resetAccentColors() {
+        liquidPill.setAccentColors(LiquidPillView.DEFAULT_START, LiquidPillView.DEFAULT_END)
     }
 }

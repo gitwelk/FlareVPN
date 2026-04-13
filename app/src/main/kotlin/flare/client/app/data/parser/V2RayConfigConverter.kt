@@ -667,6 +667,9 @@ object V2RayConfigConverter {
                     put("auto_route", true)
                     put("strict_route", true)
                     remove("dns_hijack")
+                    
+                    remove("sniff")
+                    remove("sniff_override_destination")
                 }
             }
         }
@@ -706,16 +709,40 @@ object V2RayConfigConverter {
             route.put("auto_detect_interface", true)
             val rules = route.optJSONArray("rules") ?: JSONArray().also { route.put("rules", it) }
 
-            val newRules = JSONArray()
-            newRules.put(JSONObject().apply { put("action", "sniff") })
+            
+            
+            val actionRulesFromOriginal = JSONArray()
+            val regularRules = JSONArray()
             for (i in 0 until rules.length()) {
                 val rule = rules.optJSONObject(i) ?: continue
-                if (rule.optString("action") == "hijack-dns") continue
-                if (rule.optString("protocol") == "dns" && rule.optString("action") == "hijack-dns")
-                        continue
-                if (rule.optInt("port") == 53 && rule.optString("action") == "hijack-dns") continue
-                newRules.put(rule)
+                val action = rule.optString("action", "")
+                if (action == "hijack-dns") continue  
+                if (action.isNotEmpty()) {
+                    actionRulesFromOriginal.put(rule)  
+                } else {
+                    regularRules.put(rule)
+                }
             }
+
+            val newRules = JSONArray()
+            
+            newRules.put(JSONObject().apply { put("protocol", "dns"); put("action", "hijack-dns") })
+            newRules.put(JSONObject().apply { put("port", 53); put("action", "hijack-dns") })
+            
+            var hasSniff = false
+            for (i in 0 until actionRulesFromOriginal.length()) {
+                val r = actionRulesFromOriginal.optJSONObject(i) ?: continue
+                if (r.optString("action") == "sniff") { hasSniff = true; break }
+            }
+            if (!hasSniff) newRules.put(JSONObject().apply { put("action", "sniff") })
+            
+            for (i in 0 until actionRulesFromOriginal.length()) {
+                val r = actionRulesFromOriginal.optJSONObject(i) ?: continue
+                if (r.optString("action") != "sniff") newRules.put(r)
+            }
+            
+            for (i in 0 until regularRules.length()) newRules.put(regularRules.opt(i))
+
             route.put("rules", newRules)
 
             for (i in 0 until newRules.length()) {

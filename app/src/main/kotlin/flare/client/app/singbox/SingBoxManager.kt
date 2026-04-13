@@ -133,19 +133,21 @@ object SingBoxManager {
 
                                 try {
                                     val settings = SettingsManager(vpnService)
-                                    if (settings.isSplitTunnelingEnabled &&
-                                                    settings.splitTunnelingApps.isNotEmpty()
-                                    ) {
+                                    val modeApps = settings.splitTunnelingModeApps
+                                    if (settings.isSplitTunnelingEnabled && settings.splitTunnelingApps.isNotEmpty()) {
                                         for (pkg in settings.splitTunnelingApps) {
                                             try {
-                                                builder.addAllowedApplication(pkg)
+                                                if (modeApps == "whitelist") {
+                                                    builder.addAllowedApplication(pkg)
+                                                } else {
+                                                    builder.addDisallowedApplication(pkg)
+                                                }
                                             } catch (e: Exception) {
-                                                Log.e(
-                                                        TAG,
-                                                        "Failed to add allowed application: $pkg",
-                                                        e
-                                                )
+                                                Log.e(TAG, "Failed to add application: $pkg", e)
                                             }
+                                        }
+                                        if (modeApps == "blacklist") {
+                                            builder.addDisallowedApplication(vpnService.packageName)
                                         }
                                     } else {
                                         builder.addDisallowedApplication(vpnService.packageName)
@@ -426,6 +428,121 @@ object SingBoxManager {
         return try {
             val settings = SettingsManager(context)
             val obj = JSONObject(configJson)
+
+            if (settings.isSplitTunnelingEnabled && settings.splitTunnelingSites.isNotEmpty()) {
+                val modeSites = settings.splitTunnelingModeSites
+                val sites = settings.splitTunnelingSites.toList()
+                val domainsToAdd = sites.toHashSet()
+                val route = obj.optJSONObject("route")
+                if (route != null) {
+                    val rules = route.optJSONArray("rules") ?: JSONArray().also { route.put("rules", it) }
+
+                    
+                    val proxyTag = run {
+                        val outbounds = obj.optJSONArray("outbounds")
+                        var tag = "proxy"
+                        if (outbounds != null) {
+                            for (i in 0 until outbounds.length()) {
+                                val ob = outbounds.optJSONObject(i) ?: continue
+                                val t = ob.optString("type", "")
+                                val tg = ob.optString("tag", "")
+                                if (t != "direct" && t != "block" && t != "dns" && tg.isNotEmpty()) {
+                                    tag = tg
+                                    break
+                                }
+                            }
+                        }
+                        tag
+                    }
+
+                    
+                    val targetOutbound = if (modeSites == "whitelist") proxyTag else "direct"
+
+                    
+                    val actionRules = JSONArray()
+                    val routingRules = mutableListOf<JSONObject>()
+                    for (i in 0 until rules.length()) {
+                        val rule = rules.optJSONObject(i) ?: continue
+                        if (rule.has("action")) actionRules.put(rule)
+                        else routingRules.add(rule)
+                    }
+
+                    
+                    
+                    var merged = false
+                    for (rule in routingRules) {
+                        val ruleOutbound = rule.optString("outbound", "")
+                        val hasDomainField = rule.has("domain_suffix") || rule.has("domain")
+                        
+                        val isPureDomainRule = hasDomainField &&
+                            !rule.has("rule_set") && !rule.has("ip_is_private") &&
+                            !rule.has("port") && !rule.has("network") && !rule.has("process_name")
+                        if (ruleOutbound == targetOutbound && isPureDomainRule) {
+                            
+                            val existing = rule.optJSONArray("domain_suffix") ?: JSONArray()
+                            val existingSet = (0 until existing.length()).map { existing.optString(it) }.toSet()
+                            domainsToAdd.forEach { if (it !in existingSet) existing.put(it) }
+                            rule.put("domain_suffix", existing)
+                            
+                            if (rule.has("domain") && !rule.has("domain_suffix")) {
+                                rule.put("domain_suffix", existing)
+                            }
+                            merged = true
+                            Log.i(TAG, "injectAdvancedSettings: merged sites into existing '$targetOutbound' rule")
+                            break
+                        }
+                    }
+
+                    if (!merged) {
+                        
+                        val siteRule = JSONObject().apply {
+                            put("domain_suffix", JSONArray().also { sites.forEach(it::put) })
+                            put("outbound", targetOutbound)
+                        }
+                        routingRules.add(0, siteRule)
+                        Log.i(TAG, "injectAdvancedSettings: created new '$targetOutbound' domain rule")
+                    }
+
+                    
+                    
+                    
+                    
+                    route.put("final", if (modeSites == "whitelist") "direct" else proxyTag)
+
+                    
+                    val newRules = JSONArray()
+                    for (i in 0 until actionRules.length()) newRules.put(actionRules.opt(i))
+                    routingRules.forEach { newRules.put(it) }
+                    route.put("rules", newRules)
+
+                    
+                    val dns = obj.optJSONObject("dns")
+                    if (dns != null) {
+                        val dnsRules = dns.optJSONArray("rules") ?: JSONArray().also { dns.put("rules", it) }
+                        val domainsArray = JSONArray().also { sites.forEach(it::put) }
+                        val dnsRule = JSONObject().apply {
+                            put("domain_suffix", domainsArray)
+                            
+                            put("server", if (modeSites == "whitelist") "dns-remote" else "dns-direct")
+                        }
+                        
+                        val newDnsRules = JSONArray()
+                        var dnsInserted = false
+                        for (i in 0 until dnsRules.length()) {
+                            val dr = dnsRules.optJSONObject(i) ?: continue
+                            newDnsRules.put(dr)
+                            if (!dnsInserted) {
+                                newDnsRules.put(dnsRule)
+                                dnsInserted = true
+                            }
+                        }
+                        if (!dnsInserted) newDnsRules.put(dnsRule)
+                        dns.put("rules", newDnsRules)
+                    }
+
+                    Log.i(TAG, "injectAdvancedSettings: sites split tunneling done, mode=$modeSites, proxyTag=$proxyTag, merged=$merged, sites=$sites")
+                }
+            }
 
             val remoteDnsUrl = settings.remoteDnsUrl
             if (remoteDnsUrl.isNotBlank()) {

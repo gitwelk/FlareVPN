@@ -10,6 +10,7 @@
     android:layout_margin="24dp">
 
     <TextView
+        android:id="@+id/tv_dialog_title"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/dialog_apps_title"
@@ -18,26 +19,145 @@
         android:fontFamily="@font/geologica_medium"
         android:layout_marginBottom="16dp" />
 
-    <EditText
-        android:id="@+id/et_search_apps"
-        android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:background="@drawable/bg_list_item"
-        android:hint="@string/search_apps_hint"
-        android:textColorHint="@color/text_secondary"
-        android:textColor="@color/text_primary"
-        android:paddingHorizontal="12dp"
-        android:textSize="14sp"
-        android:fontFamily="@font/geologica_regular"
-        android:layout_marginBottom="12dp"
-        android:inputType="text"
-        android:maxLines="1" />
+    <FrameLayout
+        android:id="@+id/tab_container"
+        android:layout_width="200dp"
+        android:layout_height="44dp"
+        android:clipChildren="false"
+        android:clipToPadding="false"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginBottom="16dp"
+        android:background="@drawable/bg_bottom_nav">
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rv_apps"
+        <LinearLayout
+            android:id="@+id/il_tab_icons"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="horizontal"
+            android:clickable="false"
+            android:focusable="false">
+
+            <ImageView
+                android:id="@+id/tab_apps"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:padding="8dp"
+                android:src="@drawable/ic_apps"
+                app:tint="@color/text_primary"
+                android:clickable="false"
+                android:focusable="false" />
+
+            <ImageView
+                android:id="@+id/tab_sites"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:padding="8dp"
+                android:src="@drawable/ic_website"
+                app:tint="@color/text_secondary"
+                android:clickable="false"
+                android:focusable="false" />
+        </LinearLayout>
+
+        <flare.client.app.ui.widget.LiquidPillView
+            android:id="@+id/tab_indicator"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:alpha="0"
+            android:clickable="false"
+            android:focusable="false" />
+
+    </FrameLayout>
+
+    <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="300dp"
-        android:layout_marginBottom="20dp" />
+        android:layout_marginBottom="12dp">
+
+        <LinearLayout
+            android:id="@+id/layout_apps"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical">
+
+            <EditText
+                android:id="@+id/et_search_apps"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:background="@drawable/bg_list_item"
+                android:hint="@string/search_apps_hint"
+                android:textColorHint="@color/text_secondary"
+                android:textColor="@color/text_primary"
+                android:paddingHorizontal="12dp"
+                android:textSize="14sp"
+                android:fontFamily="@font/geologica_regular"
+                android:layout_marginBottom="12dp"
+                android:inputType="text"
+                android:maxLines="1" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rv_apps"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/layout_sites"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <EditText
+                android:id="@+id/et_sites"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@drawable/bg_bordered_rounded"
+                android:tag="accent_bg"
+                android:hint="@string/sites_hint"
+                android:textColorHint="@color/text_secondary"
+                android:textColor="@color/text_primary"
+                android:padding="12dp"
+                android:gravity="top|start"
+                android:textSize="14sp"
+                android:fontFamily="@font/geologica_regular"
+                android:inputType="textMultiLine" />
+        </LinearLayout>
+    </FrameLayout>
+
+    <LinearLayout
+        android:id="@+id/btn_mode_selection"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:background="@drawable/bg_bordered_rounded"
+        android:tag="accent_bg"
+        android:paddingHorizontal="12dp"
+        android:clickable="true"
+        android:focusable="true"
+        android:layout_marginBottom="20dp">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/label_mode"
+            android:textColor="@color/text_primary"
+            android:textSize="16sp"
+            android:fontFamily="@font/geologica_medium" />
+
+        <TextView
+            android:id="@+id/tv_mode_value"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/split_mode_blacklist"
+            android:textColor="@color/accent"
+            android:tag="accent_text"
+            android:textSize="16sp"
+            android:fontFamily="@font/geologica_medium" />
+    </LinearLayout>
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -68,6 +188,7 @@
             android:layout_weight="1"
             android:text="@string/btn_save"
             android:textColor="@color/accent"
+            android:tag="accent_text"
             android:gravity="center"
             android:fontFamily="@font/geologica_medium"
             android:background="?attr/selectableItemBackground"

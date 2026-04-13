@@ -126,6 +126,7 @@
                         android:layout_height="wrap_content"
                         android:text="tlshello"
                         android:textColor="@color/accent"
+                        android:tag="accent_text"
                         android:textSize="16sp"
                         android:fontFamily="@font/geologica_medium" />
                 </LinearLayout>
@@ -156,6 +157,7 @@
                         android:hint="10"
                         android:textColorHint="@color/text_secondary"
                         android:textColor="@color/accent"
+                        android:tag="accent_text"
                         android:textSize="16sp"
                         android:fontFamily="@font/geologica_medium"
                         android:inputType="number"
@@ -258,6 +260,7 @@
                         android:layout_height="wrap_content"
                         android:text="smux"
                         android:textColor="@color/accent"
+                        android:tag="accent_text"
                         android:textSize="16sp"
                         android:fontFamily="@font/geologica_medium" />
                 </LinearLayout>
@@ -288,6 +291,7 @@
                         android:hint="8"
                         android:textColorHint="@color/text_secondary"
                         android:textColor="@color/accent"
+                        android:tag="accent_text"
                         android:textSize="16sp"
                         android:fontFamily="@font/geologica_medium"
                         android:inputType="number"
@@ -320,6 +324,7 @@
                         android:layout_height="wrap_content"
                         android:text="Нет"
                         android:textColor="@color/accent"
+                        android:tag="accent_text"
                         android:textSize="16sp"
                         android:fontFamily="@font/geologica_medium" />
                 </LinearLayout>
@@ -381,6 +386,7 @@
                     android:hint="@string/settings_hint_dns_url"
                     android:textColorHint="@color/text_secondary"
                     android:textColor="@color/accent"
+                    android:tag="accent_text"
                     android:textSize="16sp"
                     android:fontFamily="@font/geologica_medium"
                     android:inputType="textUri"
@@ -486,6 +492,7 @@
                     android:hint="1500"
                     android:textColorHint="@color/text_secondary"
                     android:textColor="@color/accent"
+                    android:tag="accent_text"
                     android:textSize="16sp"
                     android:fontFamily="@font/geologica_medium"
                     android:inputType="number"
@@ -547,6 +554,7 @@
                     android:layout_height="wrap_content"
                     android:text="Использовать mixed"
                     android:textColor="@color/accent"
+                    android:tag="accent_text"
                     android:textSize="16sp"
                     android:fontFamily="@font/geologica_medium" />
             </LinearLayout>

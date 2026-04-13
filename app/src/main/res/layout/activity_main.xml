@@ -320,6 +320,7 @@
                         android:src="@drawable/ic_check"
                         android:background="?attr/selectableItemBackgroundBorderless"
                         app:tint="@color/accent"
+                        android:tag="accent_tint"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintTop_toTopOf="parent"
                         app:layout_constraintBottom_toBottomOf="parent" />
@@ -387,6 +388,14 @@
 
                 </androidx.core.widget.NestedScrollView>
 
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:id="@+id/layout_simple_editor"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:visibility="gone">
+                <include layout="@layout/layout_simple_editor" />
             </androidx.constraintlayout.widget.ConstraintLayout>
 
         </androidx.constraintlayout.widget.ConstraintLayout>

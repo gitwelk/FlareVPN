@@ -129,7 +129,8 @@
                     android:layout_width="32dp"
                     android:layout_height="32dp"
                     android:src="@drawable/ic_notifications"
-                    app:tint="@color/accent" />
+                    app:tint="@color/accent"
+                    android:tag="accent_tint" />
 
                 <TextView
                     android:id="@+id/tv_notif_title"
@@ -186,7 +187,8 @@
                     android:layout_width="32dp"
                     android:layout_height="32dp"
                     android:src="@drawable/ic_battery"
-                    app:tint="@color/accent" />
+                    app:tint="@color/accent"
+                    android:tag="accent_tint" />
 
                 <TextView
                     android:id="@+id/tv_battery_title"
@@ -467,7 +469,8 @@
                 android:layout_width="18dp"
                 android:layout_height="18dp"
                 android:src="@drawable/ic_arrow_left"
-                app:tint="@color/accent" />
+                app:tint="@color/accent"
+                android:tag="accent_tint" />
 
             <TextView
                 android:layout_width="wrap_content"

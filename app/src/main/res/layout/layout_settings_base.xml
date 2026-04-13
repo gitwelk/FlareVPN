@@ -58,7 +58,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:layout_marginBottom="4dp">
+            android:layout_marginBottom="24dp">
 
             <LinearLayout
                 android:id="@+id/btn_toggle_split_tunneling"
@@ -117,30 +117,34 @@
                         android:layout_marginBottom="16dp"
                         android:alpha="0.7" />
 
-                    <androidx.appcompat.widget.AppCompatButton
-                        android:id="@+id/btn_change_apps"
+                    <FrameLayout
                         android:layout_width="match_parent"
-                        android:layout_height="56dp"
-                        android:background="@drawable/bg_button_accent"
-                        android:text="@string/settings_btn_change"
-                        android:textColor="@color/text_primary"
-                        android:textSize="16sp"
-                        android:fontFamily="@font/geologica_medium"
-                        android:textAllCaps="false" />
+                        android:layout_height="wrap_content">
+
+                        <androidx.appcompat.widget.AppCompatButton
+                            android:id="@+id/btn_change_apps"
+                            android:layout_width="match_parent"
+                            android:layout_height="56dp"
+                            android:background="@drawable/bg_button_accent"
+                            android:text="@string/settings_btn_change"
+                            android:textColor="@color/text_primary"
+                            android:textSize="16sp"
+                            android:fontFamily="@font/geologica_medium"
+                            android:textAllCaps="false" />
+
+                        <ProgressBar
+                            android:id="@+id/pb_change_apps_loading"
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:layout_gravity="center"
+                            android:visibility="gone"
+                            android:indeterminateTint="@color/white" />
+                    </FrameLayout>
                 </LinearLayout>
             </LinearLayout>
         </LinearLayout>
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/split_tunnel_desc"
-            android:textColor="@color/text_secondary"
-            android:textSize="12sp"
-            android:fontFamily="@font/geologica_regular"
-            android:layout_marginBottom="24dp"
-            android:layout_marginStart="4dp"
-            android:alpha="0.7" />
+
 
         <TextView
             android:layout_width="wrap_content"
@@ -364,6 +368,7 @@
                         android:hint="@string/settings_hint_best_profile_interval"
                         android:textColorHint="@color/text_secondary"
                         android:textColor="@color/accent"
+                        android:tag="accent_text"
                         android:textSize="16sp"
                         android:fontFamily="@font/geologica_medium"
                         android:inputType="number"
@@ -374,6 +379,7 @@
                         android:layout_height="wrap_content"
                         android:text="с"
                         android:textColor="@color/accent"
+                        android:tag="accent_text"
                         android:textSize="16sp"
                         android:fontFamily="@font/geologica_medium"
                         android:layout_marginStart="2dp" />
@@ -411,6 +417,7 @@
                         android:layout_height="wrap_content"
                         android:text="@string/option_yes"
                         android:textColor="@color/accent"
+                        android:tag="accent_text"
                         android:textSize="16sp"
                         android:fontFamily="@font/geologica_medium" />
                 </LinearLayout>
@@ -421,6 +428,107 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/settings_desc_best_profile"
+            android:textColor="@color/text_secondary"
+            android:textSize="13sp"
+            android:fontFamily="@font/geologica_regular"
+            android:layout_marginBottom="24dp"
+            android:layout_marginStart="4dp"
+            android:layout_marginEnd="4dp"
+            android:alpha="0.8" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/settings_header_updates"
+            android:textColor="@color/text_secondary"
+            android:textSize="14sp"
+            android:fontFamily="@font/geologica_medium"
+            android:layout_marginBottom="8dp"
+            android:layout_marginStart="4dp" />
+
+        <LinearLayout
+            android:id="@+id/block_update_check"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginBottom="12dp">
+
+            <LinearLayout
+                android:id="@+id/btn_toggle_update_check"
+                android:layout_width="match_parent"
+                android:layout_height="64dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:background="@drawable/bg_grouped_all"
+                android:paddingHorizontal="16dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/settings_label_update_check"
+                    android:textColor="@color/text_primary"
+                    android:textSize="16sp"
+                    android:fontFamily="@font/geologica_regular" />
+
+                <androidx.appcompat.widget.SwitchCompat
+                    android:id="@+id/sw_update_check"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:thumbTint="@color/white"
+                    app:trackTint="@color/accent" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/layout_update_check_sub"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginStart="16dp"
+                    android:background="@color/divider_color" />
+
+                <LinearLayout
+                    android:id="@+id/btn_update_frequency"
+                    android:layout_width="match_parent"
+                    android:layout_height="64dp"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:background="@drawable/bg_grouped_bottom"
+                    android:paddingHorizontal="16dp"
+                    android:clickable="true"
+                    android:focusable="true">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/settings_label_update_frequency"
+                        android:textColor="@color/text_primary"
+                        android:textSize="16sp"
+                        android:fontFamily="@font/geologica_regular" />
+
+                    <TextView
+                        android:id="@+id/tv_update_frequency_value"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/update_freq_daily"
+                        android:textColor="@color/accent"
+                        android:tag="accent_text"
+                        android:textSize="16sp"
+                        android:fontFamily="@font/geologica_medium" />
+                </LinearLayout>
+            </LinearLayout>
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/settings_desc_update_check"
             android:textColor="@color/text_secondary"
             android:textSize="13sp"
             android:fontFamily="@font/geologica_regular"

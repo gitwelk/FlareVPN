@@ -98,6 +98,7 @@
             android:layout_height="20dp"
             android:src="@drawable/ic_check"
             app:tint="@color/accent"
+            android:tag="accent_tint"
             android:alpha="0"
             app:layout_constraintEnd_toStartOf="@id/view_arrow_divider"
             app:layout_constraintTop_toTopOf="parent"

@@ -31,6 +31,7 @@ class ProfileAdapter(
     private val onEditProfileJson: (ProfileEntity) -> Unit,
     private val onEditSubscriptionJson: (SubscriptionEntity) -> Unit,
     private val onSubscriptionUpdate: (SubscriptionEntity) -> Unit,
+    private val onProfileLongClick: (ProfileEntity) -> Unit,
 ) : ListAdapter<DisplayItem, RecyclerView.ViewHolder>(DIFF) {
 
     companion object {
@@ -105,7 +106,7 @@ class ProfileAdapter(
                     onSubscriptionOptions
                 )
             is DisplayItem.ProfileItem ->
-                (holder as ProfileVH).bind(item, onProfileClick, onEditProfileJson)
+                (holder as ProfileVH).bind(item, onProfileClick, onProfileLongClick, onEditProfileJson)
         }
     }
 
@@ -269,6 +270,7 @@ class ProfileAdapter(
         fun bind(
             item: DisplayItem.ProfileItem,
             click: (ProfileEntity) -> Unit,
+            longClick: (ProfileEntity) -> Unit,
             editJson: (ProfileEntity) -> Unit
         ) {
             binding.tvProfileName.text = item.entity.name
@@ -281,6 +283,10 @@ class ProfileAdapter(
             updateCorners(item)
 
             binding.root.setOnClickListener { click(item.entity) }
+            binding.root.setOnLongClickListener {
+                longClick(item.entity)
+                true
+            }
             binding.ivEditJson.setOnClickListener { editJson(item.entity) }
         }
 
@@ -376,7 +382,7 @@ class ProfileAdapter(
         }
 
         private fun getProtocolDisplay(entity: ProfileEntity): String {
-            val protocol = if (entity.uri.startsWith("internal://json")) {
+            val rawProtocol = if (entity.uri.startsWith("internal://json")) {
                 try {
                     val json = JSONObject(entity.configJson)
                     val outbounds = json.optJSONArray("outbounds")
@@ -388,6 +394,8 @@ class ProfileAdapter(
             } else {
                 entity.uri.substringBefore("://").uppercase()
             }
+
+            val protocol = if (rawProtocol == "SS") "SHADOWSOCKS" else rawProtocol
 
             val base = if (entity.uri.startsWith("internal://json")) {
                 "$protocol | JSON"

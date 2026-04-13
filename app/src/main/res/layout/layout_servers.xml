@@ -57,7 +57,8 @@
                             android:layout_width="32dp"
                             android:layout_height="32dp"
                             android:src="@drawable/ic_cloud"
-                            app:tint="@color/accent" />
+                            app:tint="@color/accent"
+                            android:tag="accent_tint" />
 
                         <TextView
                             android:id="@+id/tv_flare_title"
@@ -104,7 +105,8 @@
                             android:layout_width="32dp"
                             android:layout_height="32dp"
                             android:src="@drawable/ic_suitcase"
-                            app:tint="@color/accent" />
+                            app:tint="@color/accent"
+                            android:tag="accent_tint" />
 
                         <TextView
                             android:id="@+id/tv_create_title"
@@ -590,7 +592,8 @@
                         android:layout_width="16dp"
                         android:layout_height="16dp"
                         android:src="@drawable/ic_arrow_left"
-                        app:tint="@color/accent" />
+                        app:tint="@color/accent"
+                        android:tag="accent_tint" />
 
                     <TextView
                         android:layout_width="wrap_content"

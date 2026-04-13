@@ -5,14 +5,14 @@
     android:viewportHeight="24">
     <path
         android:strokeColor="#000000"
-        android:strokeWidth="1.6"
+        android:strokeWidth="2"
         android:strokeLineJoin="round"
         android:strokeLineCap="round"
-        android:pathData="M22,2L2,11L9.5,14.5L12,22L14.5,14.5L22,2z" />
+        android:pathData="M22,2L11,13" />
     <path
         android:strokeColor="#000000"
-        android:strokeWidth="1.6"
+        android:strokeWidth="2"
         android:strokeLineJoin="round"
         android:strokeLineCap="round"
-        android:pathData="M22,2L9.5,14.5" />
+        android:pathData="M22,2L15,22L11,13L2,9L22,2z" />
 </vector>

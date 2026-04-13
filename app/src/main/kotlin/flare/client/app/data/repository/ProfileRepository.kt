@@ -29,7 +29,7 @@ class ProfileRepository(
         profileDao.insertAll(withSubId)
     }
 
-    suspend fun deleteProfile(profile: ProfileEntity) = profileDao.delete(profile)
+    suspend fun deleteProfile(id: Long) = profileDao.deleteById(id)
     suspend fun deleteSubscription(subscription: SubscriptionEntity) =
         subscriptionDao.delete(subscription)
 
@@ -47,6 +47,10 @@ class ProfileRepository(
 
     suspend fun updateProfile(id: Long, name: String, configJson: String) =
         profileDao.updateProfile(id, name, configJson)
+
+    suspend fun updateProfileFull(profile: ProfileEntity) =
+        profileDao.updateProfileFull(profile)
+
     suspend fun updateSubscription(id: Long, name: String, url: String) =
         subscriptionDao.updateSubscription(id, name, url)
 

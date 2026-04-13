@@ -71,11 +71,19 @@
     <string name="settings_header_autostart">Автозапуск</string>
     <string name="settings_label_autostart">Создавать туннель при запуске приложения</string>
     <string name="settings_btn_change">Изменить</string>
-    <string name="dialog_apps_title">Выберите приложения</string>
+    <string name="dialog_apps_title">Приложения</string>
+    <string name="dialog_domens_title">Домены</string>
     <string name="btn_cancel">Отмена</string>
     <string name="btn_save">Сохранить</string>
-    <string name="selected_apps_count">%d выбрано</string>
+    <string name="split_tunneling_desc_default">Выберите сайты и приложения которые работают через VPN или напрямую.</string>
     <string name="search_apps_hint">Поиск приложений...</string>
+
+    <string name="tab_apps">Приложения</string>
+    <string name="tab_sites">Сайты</string>
+    <string name="split_mode_whitelist">Белый список</string>
+    <string name="split_mode_blacklist">Черный список</string>
+    <string name="sites_hint">www.com\nwww2.com</string>
+    <string name="label_mode">Режим</string>
 
     <string name="json_edit_success">JSON %s был успешно изменен.</string>
     <string name="label_profile_name">Название профиля</string>
@@ -167,7 +175,7 @@
     <string name="onboarding_success_title">Настройка успешно пройдена!</string>
     <string name="onboarding_btn_go_main">На главную</string>
 
-    <string name="split_tunnel_desc">Позволяет выбирать, какие приложения работают через VPN.</string>
+
     <string name="fragment_desc">Разделение больших пакетов данных на более мелкие части. Помогает в обходе блокировок (DPI)</string>
     <string name="mux_desc">Объединяет несколько запросов в одно соединение. Снижает задержку на создание новых подключений и ускоряет загрузку.</string>
     <string name="fakeip_desc">Мгновенно выдает системе «поддельный» адрес для домена, не дожидаясь ответа от DNS-сервера. Предотвращает утечку DNS</string>
@@ -178,4 +186,33 @@
     <string name="mixedstack_desc">Средняя совместимость, поддерживает большую часть настроек туннеля, высокое энергопотребление.</string>
     <string name="gvisorstack_desc">Высокая совместимость, поддерживает все настройки туннеля, среднее энергопотребление.</string>
     <string name="systemstack_desc">Низкая совместимость, не поддерживает фрагментацию и еще некоторые настройки туннеля, низкое энергопотребление.</string>
+    <string name="settings_header_updates">Обновление</string>
+    <string name="settings_label_update_check">Проверка обновлений</string>
+    <string name="settings_label_update_frequency">Частота проверки</string>
+    <string name="settings_desc_update_check">Проверка обновлений помогает вам использовать актуальную версию Flare.</string>
+    <string name="update_freq_daily">Ежедневно</string>
+    <string name="update_freq_weekly">Еженедельно</string>
+    <string name="update_freq_monthly">Ежемесячно</string>
+    <string name="update_available_title">Доступна новая версия Flare %s!</string>
+    <string name="simple_editor_title">Редактор профиля</string>
+    <string name="simple_editor_basic">Базовые настройки</string>
+    <string name="simple_editor_tls">Настройки TLS</string>
+    <string name="simple_editor_reality">Настройки Reality</string>
+    <string name="simple_editor_tag">Имя профиля</string>
+    <string name="simple_editor_server">Сервер (Host или IP)</string>
+    <string name="simple_editor_port">Порт</string>
+    <string name="simple_editor_uuid_pwd">UUID / Пароль</string>
+    <string name="simple_editor_flow">Flow</string>
+    <string name="simple_editor_enable_tls">Включить TLS</string>
+    <string name="simple_editor_sni">SNI</string>
+    <string name="simple_editor_alpn">ALPN</string>
+    <string name="simple_editor_fingerprint">Fingerprint</string>
+    <string name="simple_editor_pbk">Public Key</string>
+    <string name="simple_editor_sid">Short ID</string>
+    <string name="simple_editor_method">Метод шифрования</string>
+    <string name="simple_editor_obfs">Obfs</string>
+    <string name="simple_editor_obfs_pass">Obfs Пароль</string>
+
+    <string name="settings_label_custom_color">Свой цвет</string>
+    <string name="settings_color_material_you">Material You</string>
 </resources>

@@ -65,7 +65,7 @@
                 android:layout_height="64dp"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
-                android:background="@drawable/bg_grouped_all"
+                android:background="@drawable/bg_grouped_top"
                 android:paddingHorizontal="16dp"
                 android:clickable="true"
                 android:focusable="true">
@@ -85,6 +85,7 @@
                     android:layout_height="wrap_content"
                     android:text="@string/theme_night"
                     android:textColor="@color/accent"
+                    android:tag="accent_text"
                     android:textSize="16sp"
                     android:fontFamily="@font/geologica_medium" />
 
@@ -96,6 +97,139 @@
                     android:textSize="20sp"
                     android:layout_marginStart="6dp" />
 
+            </LinearLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginStart="16dp"
+                android:background="@color/divider_color" />
+
+            <LinearLayout
+                android:id="@+id/btn_toggle_custom_color"
+                android:layout_width="match_parent"
+                android:layout_height="64dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:background="@drawable/bg_grouped_bottom"
+                android:paddingHorizontal="16dp"
+                android:clickable="true"
+                android:focusable="true">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/settings_label_custom_color"
+                    android:textColor="@color/text_primary"
+                    android:textSize="16sp"
+                    android:fontFamily="@font/geologica_regular" />
+
+                <androidx.appcompat.widget.SwitchCompat
+                    android:id="@+id/sw_custom_color"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:clickable="false"
+                    android:focusable="false"
+                    app:thumbTint="@color/white"
+                    app:trackTint="@color/accent" />
+
+            </LinearLayout>
+
+            <View
+                android:id="@+id/divider_color_picker"
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginStart="16dp"
+                android:background="@color/divider_color"
+                android:visibility="gone" />
+
+            <LinearLayout
+                android:id="@+id/layout_color_picker"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="@drawable/bg_grouped_bottom"
+                android:paddingHorizontal="16dp"
+                android:paddingVertical="16dp"
+                android:visibility="gone">
+
+                <HorizontalScrollView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:scrollbars="none"
+                    android:overScrollMode="never">
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+
+                        
+                        <FrameLayout
+                            android:id="@+id/btn_color_material_you"
+                            android:layout_width="48dp"
+                            android:layout_height="48dp"
+                            android:layout_marginEnd="10dp"
+                            android:clickable="true"
+                            android:focusable="true">
+
+                            <ImageView
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:src="@drawable/ic_android"
+                                android:scaleType="center"
+                                android:padding="10dp" />
+
+                        </FrameLayout>
+
+                        
+                        <FrameLayout
+                            android:id="@+id/btn_color_green"
+                            android:layout_width="48dp"
+                            android:layout_height="48dp"
+                            android:layout_marginEnd="10dp"
+                            android:clickable="true"
+                            android:focusable="true" />
+
+                        
+                        <FrameLayout
+                            android:id="@+id/btn_color_purple"
+                            android:layout_width="48dp"
+                            android:layout_height="48dp"
+                            android:layout_marginEnd="10dp"
+                            android:clickable="true"
+                            android:focusable="true" />
+
+                        
+                        <FrameLayout
+                            android:id="@+id/btn_color_red"
+                            android:layout_width="48dp"
+                            android:layout_height="48dp"
+                            android:layout_marginEnd="10dp"
+                            android:clickable="true"
+                            android:focusable="true" />
+
+                        
+                        <FrameLayout
+                            android:id="@+id/btn_color_pink"
+                            android:layout_width="48dp"
+                            android:layout_height="48dp"
+                            android:layout_marginEnd="10dp"
+                            android:clickable="true"
+                            android:focusable="true" />
+
+                        
+                        <FrameLayout
+                            android:id="@+id/btn_color_orange"
+                            android:layout_width="48dp"
+                            android:layout_height="48dp"
+                            android:clickable="true"
+                            android:focusable="true" />
+
+                    </LinearLayout>
+                </HorizontalScrollView>
             </LinearLayout>
         </LinearLayout>
 
@@ -263,6 +397,8 @@
                     android:fontFamily="@font/geologica_medium" />
             </LinearLayout>
         </LinearLayout>
+
+
 
     </LinearLayout>
 </androidx.core.widget.NestedScrollView>
