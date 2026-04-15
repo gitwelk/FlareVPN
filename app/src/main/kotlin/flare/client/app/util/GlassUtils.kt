@@ -92,13 +92,23 @@ object GlassUtils {
         blurView.outlineProvider = android.view.ViewOutlineProvider.BACKGROUND
         blurView.clipToOutline = true
 
+        val dp = context.resources.displayMetrics.density
         val lp = popupView.layoutParams
-        val popupWidth = if (lp != null && lp.width > 0) lp.width else ViewGroup.LayoutParams.WRAP_CONTENT
+        val popupWidth = if (lp != null && lp.width > 0) lp.width else (160 * dp).toInt()
+
+        popupView.measure(
+            View.MeasureSpec.makeMeasureSpec(popupWidth, View.MeasureSpec.EXACTLY),
+            View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
+        )
+
+        val measuredHeight = popupView.measuredHeight
+        val maxHeight = (260 * dp).toInt()
+        val finalHeight = if (measuredHeight > maxHeight) maxHeight else ViewGroup.LayoutParams.WRAP_CONTENT
 
         val popupWindow = PopupWindow(
             popupView,
             popupWidth,
-            ViewGroup.LayoutParams.WRAP_CONTENT,
+            finalHeight,
             true
         )
         popupWindow.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(Color.TRANSPARENT))
@@ -115,7 +125,6 @@ object GlassUtils {
             container.addView(itemView)
             if (index < items.size - 1) {
                 val divider = View(context)
-                val dp = context.resources.displayMetrics.density
                 divider.layoutParams = ViewGroup.MarginLayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, (1 * dp).toInt()).apply {
                     marginStart = (16 * dp).toInt()
                     marginEnd = (16 * dp).toInt()
@@ -131,12 +140,6 @@ object GlassUtils {
             }
         }
 
-        popupView.measure(
-            View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED),
-            View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
-        )
-
-        val dp = context.resources.displayMetrics.density
         popupWindow.showAsDropDown(anchor, -(12 * dp).toInt(), -(12 * dp).toInt(), Gravity.END)
     }
 }

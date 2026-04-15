@@ -15,7 +15,9 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="20dp">
+        android:paddingTop="2dp"
+        android:paddingHorizontal="20dp"
+        android:paddingBottom="20dp">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -40,6 +42,7 @@
                 android:textColor="@color/text_primary"
                 android:textSize="22sp"
                 android:fontFamily="@font/geologica_medium"
+            app:fontFamily="@font/geologica_medium"
                 android:layout_marginStart="8dp" />
         </LinearLayout>
 
@@ -50,6 +53,7 @@
             android:textColor="@color/text_secondary"
             android:textSize="14sp"
             android:fontFamily="@font/geologica_medium"
+            app:fontFamily="@font/geologica_medium"
             android:layout_marginBottom="8dp"
             android:layout_marginStart="4dp" />
 
@@ -76,7 +80,8 @@
                     android:text="@string/settings_label_auto_update"
                     android:textColor="@color/text_primary"
                     android:textSize="16sp"
-                    android:fontFamily="@font/geologica_regular" />
+                    android:fontFamily="@font/geologica_regular"
+            app:fontFamily="@font/geologica_regular" />
 
                 <androidx.appcompat.widget.SwitchCompat
                     android:id="@+id/sw_auto_update"
@@ -114,7 +119,8 @@
                         android:text="@string/settings_label_update_every"
                         android:textColor="@color/text_primary"
                         android:textSize="16sp"
-                        android:fontFamily="@font/geologica_regular" />
+                        android:fontFamily="@font/geologica_regular"
+            app:fontFamily="@font/geologica_regular" />
 
                     <EditText
                         android:id="@+id/et_update_interval"
@@ -129,6 +135,7 @@
                         android:tag="accent_text"
                         android:textSize="16sp"
                         android:fontFamily="@font/geologica_medium"
+            app:fontFamily="@font/geologica_medium"
                         android:inputType="number"
                         android:imeOptions="actionDone" />
 
@@ -140,6 +147,7 @@
                         android:tag="accent_text"
                         android:textSize="16sp"
                         android:fontFamily="@font/geologica_medium"
+            app:fontFamily="@font/geologica_medium"
                         android:layout_marginStart="2dp" />
                 </LinearLayout>
             </LinearLayout>

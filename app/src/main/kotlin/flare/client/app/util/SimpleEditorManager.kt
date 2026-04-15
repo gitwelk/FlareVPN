@@ -117,7 +117,7 @@ class SimpleEditorManager(
 
             when (currentScheme) {
                 "vless", "trojan" -> {
-                    tvUuidLabel.text = if (currentScheme == "vless") "UUID" else "Password"
+                    tvUuidLabel.text = if (currentScheme == "vless") view.context.getString(R.string.label_uuid) else view.context.getString(R.string.label_password)
                     etUuid.setText(uri.userInfo ?: "")
                     
                     layoutFlow.visibility = if (currentScheme == "vless") View.VISIBLE else View.GONE
@@ -143,7 +143,7 @@ class SimpleEditorManager(
                     }
                 }
                 "vmess" -> {
-                    tvUuidLabel.text = "UUID"
+                    tvUuidLabel.text = view.context.getString(R.string.label_uuid)
                     val b64 = profile.uri.removePrefix("vmess://").trim()
                     try {
                         val json = org.json.JSONObject(String(android.util.Base64.decode(b64, android.util.Base64.DEFAULT)))
@@ -164,7 +164,7 @@ class SimpleEditorManager(
                     layoutRealityContainer.visibility = View.GONE
                 }
                 "ss", "shadowsocks" -> {
-                    tvUuidLabel.text = "Password"
+                    tvUuidLabel.text = view.context.getString(R.string.label_password)
                     layoutFlow.visibility = View.GONE
                     viewFlowDivider.visibility = View.GONE
                     layoutMethod.visibility = View.VISIBLE
@@ -177,7 +177,7 @@ class SimpleEditorManager(
                     etUuid.setText(userInfo.substringAfter(":"))
                 }
                 "hysteria2", "hy2" -> {
-                    tvUuidLabel.text = "Password"
+                    tvUuidLabel.text = view.context.getString(R.string.label_password)
                     etUuid.setText(uri.userInfo ?: "")
                     layoutFlow.visibility = View.GONE
                     viewFlowDivider.visibility = View.GONE
@@ -195,7 +195,7 @@ class SimpleEditorManager(
                 }
                 else -> {
                     
-                    tvUuidLabel.text = "Credentials"
+                    tvUuidLabel.text = view.context.getString(R.string.label_credentials)
                     etUuid.setText(uri.userInfo ?: "")
                     layoutFlow.visibility = View.GONE
                     viewFlowDivider.visibility = View.GONE
@@ -289,7 +289,7 @@ class SimpleEditorManager(
                 else -> original.uri
             }
 
-            val updatedProfile = ClipboardParser.buildProfileFromUri(newUri, original.subscriptionId)
+            val updatedProfile = ClipboardParser.buildProfileFromUri(view.context, newUri, original.subscriptionId)
             onSave(updatedProfile.copy(id = original.id, name = name))
         } catch (e: Exception) {
             e.printStackTrace()

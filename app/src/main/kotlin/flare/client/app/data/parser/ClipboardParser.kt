@@ -1,6 +1,8 @@
 package flare.client.app.data.parser
 
+import android.content.Context
 import android.util.Base64
+import flare.client.app.R
 import flare.client.app.data.model.ProfileEntity
 import flare.client.app.data.model.SubscriptionEntity
 import okhttp3.OkHttpClient
@@ -10,6 +12,13 @@ import org.json.JSONObject
 import java.net.URI
 import java.net.URLDecoder
 import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
+import okhttp3.Call
+import okhttp3.Callback
+import okhttp3.Response
+import java.io.IOException
 
 object ClipboardParser {
 
@@ -26,43 +35,70 @@ object ClipboardParser {
         data class Error(val message: String) : ParseResult()
     }
 
-    fun parse(text: String): ParseResult {
+    suspend fun parse(context: Context, text: String, hwid: String? = null, deviceName: String? = null, androidVersion: String? = null): ParseResult {
         val trimmed = text.trim()
         return when {
-            trimmed.startsWith("{") && trimmed.endsWith("}") -> parseFullJson(trimmed)
-            singleSchemes.any { trimmed.startsWith("$it://") } -> parseSingleProxy(trimmed)
-            trimmed.startsWith("http://") || trimmed.startsWith("https://") -> parseSubscriptionUrl(trimmed)
-            else -> ParseResult.Error("Неверный формат. Поддерживаются: vless://, vmess://, ss://, trojan://, http(s):// и JSON")
+            trimmed.startsWith("{") && trimmed.endsWith("}") -> parseFullJson(context, trimmed)
+            singleSchemes.any { trimmed.startsWith("$it://") } -> parseSingleProxy(context, trimmed)
+            trimmed.startsWith("http://") || trimmed.startsWith("https://") -> parseSubscriptionUrl(context, trimmed, hwid, deviceName, androidVersion)
+            else -> ParseResult.Error(context.getString(R.string.error_invalid_format))
         }
     }
 
-    private fun parseSingleProxy(uri: String): ParseResult {
+    private fun parseSingleProxy(context: Context, uri: String): ParseResult {
         return try {
-            val profile = buildProfileFromUri(uri, subscriptionId = null)
+            val profile = buildProfileFromUri(context, uri, subscriptionId = null)
             ParseResult.SingleProfile(profile)
         } catch (e: Exception) {
-            ParseResult.Error("Ошибка парсинга: ${e.message}")
+            ParseResult.Error(context.getString(R.string.error_parsing, e.message ?: ""))
         }
     }
 
-    private fun parseFullJson(text: String): ParseResult {
+    private fun parseFullJson(context: Context, text: String): ParseResult {
         return try {
             val json = JSONObject(text)
-            val name = extractNameFromJson(json)
+            val name = extractNameFromJson(context, json)
             val configJson = V2RayConfigConverter.convertIfNeeded(text)
             ParseResult.SingleProfile(ProfileEntity(name = name, uri = "internal://json", configJson = configJson, subscriptionId = null))
         } catch (e: Exception) {
-            ParseResult.Error("Ошибка JSON: ${e.message}")
+            ParseResult.Error(context.getString(R.string.error_json, e.message ?: ""))
         }
     }
 
-    private fun parseSubscriptionUrl(url: String): ParseResult {
+    private suspend fun parseSubscriptionUrl(context: Context, url: String, hwid: String? = null, deviceName: String? = null, androidVersion: String? = null): ParseResult {
         return try {
-            val request = Request.Builder()
-                .url(url)
-                .header("User-Agent", "Happ/3.15.2")
-                .build()
-            val response = httpClient.newCall(request).execute()
+            var finalUrl = url
+            if (hwid != null) {
+                val base = if (url.contains("#")) url.substringBefore("#") else url
+                val fragment = if (url.contains("#")) "#" + url.substringAfter("#") else ""
+                var currentUrl = base
+                
+                val separator = if (currentUrl.contains("?")) "&" else "?"
+                currentUrl = "$currentUrl${separator}hwid=$hwid"
+                finalUrl = currentUrl + fragment
+            }
+
+            val userAgent = "Happ/3.15.2"
+            val requestBuilder = Request.Builder()
+                .url(finalUrl)
+                .header("User-Agent", userAgent)
+            
+            if (androidVersion != null) {
+                requestBuilder.header("x-ver-os", androidVersion)
+            }
+            if (hwid != null) {
+                requestBuilder.header("x-hwid", hwid)
+            }
+            if (deviceName != null) {
+                requestBuilder.header("x-device-model", deviceName)
+            }
+
+            val request = requestBuilder.build()
+            val response = try {
+                httpClient.newCall(request).await()
+            } catch (e: Exception) {
+                return ParseResult.Error(context.getString(R.string.error_subscription, e.message ?: ""))
+            }
             val body = response.body?.string() ?: ""
             val profileTitle = response.header("profile-title")
             val contentDisposition = response.header("content-disposition")
@@ -101,9 +137,9 @@ object ClipboardParser {
                 }
             }
             val proxyLines = decodeSubscriptionBody(body)
-            val profiles = proxyLines.mapIndexedNotNull { _, line -> try { buildProfileFromUri(line.trim(), 0L) } catch (_: Exception) { null } }
+            val profiles = proxyLines.mapIndexedNotNull { _, line -> try { buildProfileFromUri(context, line.trim(), 0L) } catch (_: Exception) { null } }
             response.close()
-            if (profiles.isEmpty()) return ParseResult.Error("Подписка пуста")
+            if (profiles.isEmpty()) return ParseResult.Error(context.getString(R.string.error_subscription_empty))
             ParseResult.Subscription(
                 SubscriptionEntity(
                     name = name,
@@ -119,7 +155,29 @@ object ClipboardParser {
                 profiles
             )
         } catch (e: Exception) {
-            ParseResult.Error("Ошибка подписки: ${e.message}")
+            ParseResult.Error(context.getString(R.string.error_subscription, e.message ?: ""))
+        }
+    }
+
+    private suspend fun Call.await(): Response {
+        return suspendCancellableCoroutine { continuation ->
+            enqueue(object : Callback {
+                override fun onResponse(call: Call, response: Response) {
+                    continuation.resume(response)
+                }
+
+                override fun onFailure(call: Call, e: IOException) {
+                    if (continuation.isCancelled) return
+                    continuation.resumeWithException(e)
+                }
+            })
+            continuation.invokeOnCancellation {
+                try {
+                    cancel()
+                } catch (ex: Throwable) {
+                    
+                }
+            }
         }
     }
 
@@ -155,14 +213,14 @@ object ClipboardParser {
         }
     }
 
-    private fun extractNameFromJson(json: JSONObject): String {
+    private fun extractNameFromJson(context: Context, json: JSONObject): String {
         return json.optString("remarks").takeIf { it.isNotBlank() }
             ?: json.optString("tag").takeIf { it.isNotBlank() }
             ?: json.optJSONArray("outbounds")?.optJSONObject(0)?.let {
                 it.optString("tag").takeIf { tag -> tag.isNotBlank() && tag != "proxy" }
                     ?: it.optString("server").takeIf { srv -> srv.isNotBlank() }
             }
-            ?: "Imported Profile"
+            ?: context.getString(R.string.label_imported_profile)
     }
 
     private fun decodeSubscriptionBody(body: String): List<String> {
@@ -238,11 +296,11 @@ object ClipboardParser {
         return results.filter { it.isNotBlank() }
     }
 
-    fun buildProfileFromUri(uri: String, subscriptionId: Long?): ProfileEntity {
+    fun buildProfileFromUri(context: Context, uri: String, subscriptionId: Long?): ProfileEntity {
         val trimmed = uri.trim()
         if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
             val json = JSONObject(trimmed)
-            val name = extractNameFromJson(json)
+            val name = extractNameFromJson(context, json)
             return ProfileEntity(name = name, uri = "internal://json", configJson = V2RayConfigConverter.convertIfNeeded(trimmed), subscriptionId = subscriptionId)
         }
 

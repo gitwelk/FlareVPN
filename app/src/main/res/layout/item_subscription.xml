@@ -81,6 +81,7 @@
                 android:textColor="@color/text_secondary"
                 android:textSize="9sp"
                 android:fontFamily="@font/geologica_medium"
+            app:fontFamily="@font/geologica_medium"
                 android:visibility="gone" />
         </LinearLayout>
 
@@ -102,6 +103,7 @@
                 android:textColor="@color/text_primary"
                 android:textSize="15sp"
                 android:fontFamily="@font/geologica_medium"
+            app:fontFamily="@font/geologica_medium"
                 android:maxLines="1"
                 android:ellipsize="end" />
 
@@ -129,7 +131,8 @@
                     android:shadowDy="0"
                     android:shadowRadius="4"
                     android:textSize="10sp"
-                    android:fontFamily="@font/geologica_medium" />
+                    android:fontFamily="@font/geologica_medium"
+            app:fontFamily="@font/geologica_medium" />
             </FrameLayout>
 
         </LinearLayout>
@@ -147,6 +150,7 @@
         android:textColor="@color/text_secondary"
         android:textSize="11sp"
         android:fontFamily="@font/geologica_regular"
+            app:fontFamily="@font/geologica_regular"
         android:visibility="gone"
         android:autoLink="web"
         android:linksClickable="true" />

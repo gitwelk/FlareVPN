@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.VpnService
 import android.os.Build
 import android.os.Environment
+import android.os.SystemClock
 import android.os.ParcelFileDescriptor
 import android.util.Log
 import flare.client.app.data.SettingsManager
@@ -13,11 +14,14 @@ import java.io.File
 import java.io.FileReader
 import org.json.JSONArray
 import org.json.JSONObject
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 object SingBoxManager {
 
     private const val TAG = "SingBoxManager"
     private var boxService: CommandServer? = null
+    private val mutex = Mutex()
     private var tunPfd: ParcelFileDescriptor? = null
 
     var isRunning: Boolean = false
@@ -28,11 +32,11 @@ object SingBoxManager {
 
     private var setupDone = false
     private var logFile: File? = null
-    private var logTailThread: Thread? = null
 
     private fun ensureSetup(context: Context) {
         if (setupDone) return
         try {
+            val settings = SettingsManager(context)
             val version =
                     try {
                         Libbox.version()
@@ -54,15 +58,19 @@ object SingBoxManager {
             val lf = File(context.filesDir, "sing-box.log")
             logFile = lf
             try {
-                lf.delete()
+                if (settings.isCoreLogEnabled) {
+                    lf.delete()
+                }
             } catch (_: Exception) {}
-            Log.i(TAG, "sing-box log file: ${lf.absolutePath}")
-
-            try {
-                Libbox.redirectStderr(lf.absolutePath)
-                Log.i(TAG, "sing-box stderr redirected")
-            } catch (e: Exception) {
-                Log.w(TAG, "redirectStderr failed (non-fatal): ${e.message}")
+            
+            if (settings.isCoreLogEnabled) {
+                Log.i(TAG, "sing-box log file: ${lf.absolutePath}")
+                try {
+                    Libbox.redirectStderr(lf.absolutePath)
+                    Log.i(TAG, "sing-box stderr redirected")
+                } catch (e: Exception) {
+                    Log.w(TAG, "redirectStderr failed (non-fatal): ${e.message}")
+                }
             }
 
             setupDone = true
@@ -72,18 +80,23 @@ object SingBoxManager {
         }
     }
 
-    fun start(configContent: String, context: Context): Boolean {
+    suspend fun start(configContent: String, context: Context): Boolean {
         if (isRunning) {
-            Log.w(TAG, "sing-box is already running")
+            Log.w(TAG, "sing-box is already running (early check)")
             return true
         }
+        return mutex.withLock {
+            if (isRunning) {
+                Log.w(TAG, "sing-box is already running")
+                return@withLock true
+            }
 
         ensureSetup(context)
         LocalResolver.init(context)
 
         val vpnService: VpnService? = context as? VpnService
 
-        return try {
+        try {
             val handler =
                     object : CommandServerHandler {
                         override fun serviceStop() {}
@@ -167,12 +180,14 @@ object SingBoxManager {
                                     while (inet4.hasNext()) {
                                         val addr = inet4.next()
                                         builder.addAddress(addr.address(), addr.prefix())
+                                        Log.d(TAG, "openTun: added address ${addr.address()}/${addr.prefix()}")
                                     }
 
                                     val inet6 = opts.inet6Address
                                     while (inet6.hasNext()) {
                                         val addr = inet6.next()
                                         builder.addAddress(addr.address(), addr.prefix())
+                                        Log.d(TAG, "openTun: added IPv6 address ${addr.address()}/${addr.prefix()}")
                                     }
 
                                     if (opts.autoRoute) {
@@ -290,10 +305,11 @@ object SingBoxManager {
                 Log.e(TAG, "CommandServer.start() failed: ${e.message}", e)
             }
 
+            val settings = SettingsManager(context)
             val logFilePath = logFile?.absolutePath
             var patchedConfig =
                     if (logFilePath != null) {
-                        injectLogOutput(configContent, logFilePath)
+                        injectLogOutput(configContent, logFilePath, settings)
                     } else configContent
 
             patchedConfig = injectAdvancedSettings(patchedConfig, context)
@@ -307,10 +323,8 @@ object SingBoxManager {
                 throw e
             }
 
-            startLogTail()
-
             isRunning = true
-            startTime = System.currentTimeMillis()
+            startTime = SystemClock.elapsedRealtime()
             if (flare.client.app.BuildConfig.DEBUG) Log.i(TAG, "sing-box started via AAR")
             true
         } catch (e: Exception) {
@@ -320,23 +334,26 @@ object SingBoxManager {
             false
         }
     }
+}
 
-    fun stop() {
-        stopLogTail()
-        try {
-            boxService?.closeService()
-            boxService?.close()
-            if (flare.client.app.BuildConfig.DEBUG) Log.i(TAG, "sing-box stopped")
-        } catch (e: Exception) {
-            Log.e(TAG, "Error stopping sing-box: ${e.message}", e)
-        } finally {
-            boxService = null
-            isRunning = false
-            startTime = 0L
+    suspend fun stop() {
+        mutex.withLock {
             try {
-                tunPfd?.close()
-            } catch (_: Exception) {}
-            tunPfd = null
+                boxService?.closeService()
+                boxService?.close()
+                if (flare.client.app.BuildConfig.DEBUG) Log.i(TAG, "sing-box stopped")
+            } catch (e: Exception) {
+                Log.e(TAG, "Error stopping sing-box: ${e.message}", e)
+            } finally {
+                boxService = null
+                isRunning = false
+                startTime = 0L
+                try {
+                    tunPfd?.close()
+                } catch (_: Exception) {}
+                tunPfd = null
+            }
+            return@withLock
         }
     }
 
@@ -344,78 +361,26 @@ object SingBoxManager {
         callback(0L, 0L)
     }
 
-    private fun startLogTail() {
-        val file = logFile ?: return
-        stopLogTail()
-        val t =
-                Thread(
-                        {
-                            try {
-                                Thread.sleep(800)
-                                if (!file.exists()) {
-                                    Log.w(
-                                            TAG,
-                                            "[sb-core] Log file not created: ${file.absolutePath}"
-                                    )
-                                    return@Thread
-                                }
-                                val reader = BufferedReader(FileReader(file))
-                                Log.i(
-                                        TAG,
-                                        "[sb-core] === Log tail started, size=${file.length()} ==="
-                                )
-                                while (!Thread.currentThread().isInterrupted) {
-                                    val line = reader.readLine()
-                                    if (line != null) {
-                                    } else {
-                                        Thread.sleep(150)
-                                    }
-                                }
-                                reader.close()
-                            } catch (_: InterruptedException) {
-                            } catch (e: Exception) {
-                                Log.w(TAG, "Log tail error: ${e.message}")
-                            }
-                            Log.i(TAG, "[sb-core] === Log tail stopped ===")
-                        },
-                        "sb-log-tail"
-                )
-        t.isDaemon = true
-        t.start()
-        logTailThread = t
-    }
+    
 
-    private fun stopLogTail() {
-        logTailThread?.interrupt()
-        logTailThread = null
-    }
+    
 
-    fun copySingBoxLog(): String? {
-        val src = logFile ?: return null
-        if (!src.exists()) return null
-        return try {
-            val dst =
-                    File(
-                            Environment.getExternalStoragePublicDirectory(
-                                    Environment.DIRECTORY_DOWNLOADS
-                            ),
-                            "singbox_${System.currentTimeMillis()}.log"
-                    )
-            src.copyTo(dst, overwrite = true)
-            Log.i(TAG, "sing-box log copied to: ${dst.absolutePath}")
-            dst.absolutePath
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to copy sing-box log: ${e.message}")
-            null
-        }
-    }
-
-    private fun injectLogOutput(configJson: String, logFilePath: String): String {
+    private fun injectLogOutput(configJson: String, logFilePath: String, settings: SettingsManager): String {
         return try {
             val obj = JSONObject(configJson)
             val log = obj.optJSONObject("log") ?: JSONObject()
-            log.put("output", logFilePath)
-            log.put("level", "debug")
+            
+            val level = settings.coreLogLevel
+            if (settings.isCoreLogEnabled && level != "none") {
+                log.put("disabled", false)
+                log.put("level", level)
+                log.put("output", logFilePath)
+            } else {
+                log.put("disabled", true)
+                log.remove("level")
+                log.remove("output")
+            }
+            
             obj.put("log", log)
             obj.toString(2).replace("\\/", "/")
         } catch (e: Exception) {

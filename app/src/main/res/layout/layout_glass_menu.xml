@@ -9,11 +9,26 @@
         android:layout_height="match_parent"
         android:background="@drawable/bg_glass_menu" />
 
-    <LinearLayout
-        android:id="@+id/menu_item_container"
+    <ScrollView
+        android:id="@+id/menu_scroll_view"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:paddingVertical="4dp" />
+        android:scrollbars="vertical"
+        android:scrollbarThumbVertical="@drawable/scrollbar_glass"
+        android:verticalScrollbarPosition="left"
+        android:scrollbarStyle="insideOverlay"
+        android:scrollbarSize="3dp"
+        android:fadeScrollbars="false"
+        android:paddingTop="0dp"
+        android:paddingBottom="0dp"
+        android:paddingStart="6dp">
+
+        <LinearLayout
+            android:id="@+id/menu_item_container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingVertical="4dp" />
+    </ScrollView>
 
 </FrameLayout>

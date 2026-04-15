@@ -27,7 +27,7 @@ class SettingsManager(context: Context) {
         set(value) = prefs.edit().putString("ping_test_url", value).apply()
 
     var pingStyle: String
-        get() = prefs.getString("ping_style", "Время") ?: "Время"
+        get() = prefs.getString("ping_style", "time") ?: "time"
         set(value) = prefs.edit().putString("ping_style", value).apply()
 
     var mtu: String
@@ -146,7 +146,7 @@ class SettingsManager(context: Context) {
         set(value) = prefs.edit().putBoolean("update_check_enabled", value).apply()
 
     var updateCheckFrequency: String
-        get() = prefs.getString("update_check_frequency", "Ежедневно") ?: "Ежедневно"
+        get() = prefs.getString("update_check_frequency", "daily") ?: "daily"
         set(value) = prefs.edit().putString("update_check_frequency", value).apply()
 
     var lastUpdateCheckTime: Long
@@ -161,4 +161,23 @@ class SettingsManager(context: Context) {
     var accentColorKey: String
         get() = prefs.getString("accent_color_key", "default") ?: "default"
         set(value) = prefs.edit().putString("accent_color_key", value).apply()
+
+    var appLanguage: String
+        get() = prefs.getString("app_language", "auto") ?: "auto"
+        set(value) = prefs.edit().putString("app_language", value).apply()
+
+    var isHwidEnabled: Boolean
+        get() = prefs.getBoolean("hwid_enabled", false)
+        set(value) = prefs.edit().putBoolean("hwid_enabled", value).apply()
+
+    var isCoreLogEnabled: Boolean
+        get() = prefs.getBoolean("core_log_enabled", false)
+        set(value) = prefs.edit().putBoolean("core_log_enabled", value).apply()
+
+    var coreLogLevel: String
+        get() {
+            val level = prefs.getString("core_log_level", "warn") ?: "warn"
+            return if (level == "silent" || level == "none") "warn" else level
+        }
+        set(value) = prefs.edit().putString("core_log_level", value).apply()
 }

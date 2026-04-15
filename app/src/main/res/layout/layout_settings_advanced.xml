@@ -15,7 +15,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:paddingTop="20dp"
+        android:paddingTop="2dp"
         android:paddingHorizontal="20dp">
 
         <LinearLayout
@@ -41,6 +41,7 @@
                 android:textColor="@color/text_primary"
                 android:textSize="22sp"
                 android:fontFamily="@font/geologica_medium"
+            app:fontFamily="@font/geologica_medium"
                 android:layout_marginStart="8dp" />
         </LinearLayout>
 
@@ -51,6 +52,7 @@
             android:textColor="@color/text_secondary"
             android:textSize="14sp"
             android:fontFamily="@font/geologica_medium"
+            app:fontFamily="@font/geologica_medium"
             android:layout_marginBottom="8dp"
             android:layout_marginStart="4dp" />
 
@@ -77,7 +79,8 @@
                     android:text="@string/settings_label_fragmentation"
                     android:textColor="@color/text_primary"
                     android:textSize="16sp"
-                    android:fontFamily="@font/geologica_regular" />
+                    android:fontFamily="@font/geologica_regular"
+            app:fontFamily="@font/geologica_regular" />
 
                 <androidx.appcompat.widget.SwitchCompat
                     android:id="@+id/sw_fragmentation"
@@ -118,7 +121,8 @@
                         android:text="@string/settings_label_packet_type"
                         android:textColor="@color/text_primary"
                         android:textSize="16sp"
-                        android:fontFamily="@font/geologica_regular" />
+                        android:fontFamily="@font/geologica_regular"
+            app:fontFamily="@font/geologica_regular" />
 
                     <TextView
                         android:id="@+id/tv_packet_type_value"
@@ -128,7 +132,8 @@
                         android:textColor="@color/accent"
                         android:tag="accent_text"
                         android:textSize="16sp"
-                        android:fontFamily="@font/geologica_medium" />
+                        android:fontFamily="@font/geologica_medium"
+            app:fontFamily="@font/geologica_medium" />
                 </LinearLayout>
 
                 <LinearLayout
@@ -146,7 +151,8 @@
                         android:text="@string/settings_label_fragment_interval"
                         android:textColor="@color/text_primary"
                         android:textSize="16sp"
-                        android:fontFamily="@font/geologica_regular" />
+                        android:fontFamily="@font/geologica_regular"
+            app:fontFamily="@font/geologica_regular" />
 
                     <EditText
                         android:id="@+id/et_fragment_interval"
@@ -160,6 +166,7 @@
                         android:tag="accent_text"
                         android:textSize="16sp"
                         android:fontFamily="@font/geologica_medium"
+            app:fontFamily="@font/geologica_medium"
                         android:inputType="number"
                         android:imeOptions="actionDone" />
                 </LinearLayout>
@@ -174,6 +181,7 @@
             android:textColor="@color/text_secondary"
             android:textSize="12sp"
             android:fontFamily="@font/geologica_regular"
+            app:fontFamily="@font/geologica_regular"
             android:layout_marginBottom="24dp"
             android:layout_marginStart="4dp"
             android:alpha="0.7" />
@@ -185,6 +193,7 @@
             android:textColor="@color/text_secondary"
             android:textSize="14sp"
             android:fontFamily="@font/geologica_medium"
+            app:fontFamily="@font/geologica_medium"
             android:layout_marginBottom="8dp"
             android:layout_marginStart="4dp" />
 
@@ -211,7 +220,8 @@
                     android:text="@string/settings_label_mux"
                     android:textColor="@color/text_primary"
                     android:textSize="16sp"
-                    android:fontFamily="@font/geologica_regular" />
+                    android:fontFamily="@font/geologica_regular"
+            app:fontFamily="@font/geologica_regular" />
 
                 <androidx.appcompat.widget.SwitchCompat
                     android:id="@+id/sw_mux"
@@ -252,7 +262,8 @@
                         android:text="@string/settings_label_mux_protocol"
                         android:textColor="@color/text_primary"
                         android:textSize="16sp"
-                        android:fontFamily="@font/geologica_regular" />
+                        android:fontFamily="@font/geologica_regular"
+            app:fontFamily="@font/geologica_regular" />
 
                     <TextView
                         android:id="@+id/tv_mux_protocol_value"
@@ -262,7 +273,8 @@
                         android:textColor="@color/accent"
                         android:tag="accent_text"
                         android:textSize="16sp"
-                        android:fontFamily="@font/geologica_medium" />
+                        android:fontFamily="@font/geologica_medium"
+            app:fontFamily="@font/geologica_medium" />
                 </LinearLayout>
 
                 <LinearLayout
@@ -280,7 +292,8 @@
                         android:text="@string/settings_label_mux_streams"
                         android:textColor="@color/text_primary"
                         android:textSize="16sp"
-                        android:fontFamily="@font/geologica_regular" />
+                        android:fontFamily="@font/geologica_regular"
+            app:fontFamily="@font/geologica_regular" />
 
                     <EditText
                         android:id="@+id/et_mux_max_streams"
@@ -294,6 +307,7 @@
                         android:tag="accent_text"
                         android:textSize="16sp"
                         android:fontFamily="@font/geologica_medium"
+            app:fontFamily="@font/geologica_medium"
                         android:inputType="number"
                         android:imeOptions="actionDone" />
                 </LinearLayout>
@@ -316,17 +330,19 @@
                         android:text="@string/settings_label_mux_padding"
                         android:textColor="@color/text_primary"
                         android:textSize="16sp"
-                        android:fontFamily="@font/geologica_regular" />
+                        android:fontFamily="@font/geologica_regular"
+            app:fontFamily="@font/geologica_regular" />
 
                     <TextView
                         android:id="@+id/tv_mux_padding_value"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Нет"
+                        android:text="@string/option_no"
                         android:textColor="@color/accent"
                         android:tag="accent_text"
                         android:textSize="16sp"
-                        android:fontFamily="@font/geologica_medium" />
+                        android:fontFamily="@font/geologica_medium"
+            app:fontFamily="@font/geologica_medium" />
                 </LinearLayout>
 
             </LinearLayout>
@@ -339,6 +355,7 @@
             android:textColor="@color/text_secondary"
             android:textSize="12sp"
             android:fontFamily="@font/geologica_regular"
+            app:fontFamily="@font/geologica_regular"
             android:layout_marginBottom="24dp"
             android:layout_marginStart="4dp"
             android:alpha="0.7" />
@@ -350,6 +367,7 @@
             android:textColor="@color/text_secondary"
             android:textSize="14sp"
             android:fontFamily="@font/geologica_medium"
+            app:fontFamily="@font/geologica_medium"
             android:layout_marginBottom="8dp"
             android:layout_marginStart="4dp" />
 
@@ -375,7 +393,8 @@
                     android:text="@string/settings_label_dns_url"
                     android:textColor="@color/text_primary"
                     android:textSize="16sp"
-                    android:fontFamily="@font/geologica_regular" />
+                    android:fontFamily="@font/geologica_regular"
+            app:fontFamily="@font/geologica_regular" />
 
                 <EditText
                     android:id="@+id/et_remote_dns_url"
@@ -389,6 +408,7 @@
                     android:tag="accent_text"
                     android:textSize="16sp"
                     android:fontFamily="@font/geologica_medium"
+            app:fontFamily="@font/geologica_medium"
                     android:inputType="textUri"
                     android:imeOptions="actionDone" />
             </LinearLayout>
@@ -401,6 +421,7 @@
             android:textColor="@color/text_secondary"
             android:textSize="14sp"
             android:fontFamily="@font/geologica_medium"
+            app:fontFamily="@font/geologica_medium"
             android:layout_marginBottom="8dp"
             android:layout_marginStart="4dp" />
 
@@ -427,7 +448,8 @@
                     android:text="@string/settings_label_use_fake_ip"
                     android:textColor="@color/text_primary"
                     android:textSize="16sp"
-                    android:fontFamily="@font/geologica_regular" />
+                    android:fontFamily="@font/geologica_regular"
+            app:fontFamily="@font/geologica_regular" />
 
                 <androidx.appcompat.widget.SwitchCompat
                     android:id="@+id/sw_fake_ip"
@@ -445,6 +467,7 @@
             android:textColor="@color/text_secondary"
             android:textSize="12sp"
             android:fontFamily="@font/geologica_regular"
+            app:fontFamily="@font/geologica_regular"
             android:layout_marginBottom="24dp"
             android:layout_marginStart="4dp"
             android:alpha="0.7" />
@@ -456,6 +479,7 @@
             android:textColor="@color/text_secondary"
             android:textSize="14sp"
             android:fontFamily="@font/geologica_medium"
+            app:fontFamily="@font/geologica_medium"
             android:layout_marginBottom="8dp"
             android:layout_marginStart="4dp" />
 
@@ -481,7 +505,8 @@
                     android:text="@string/settings_label_mtu"
                     android:textColor="@color/text_primary"
                     android:textSize="16sp"
-                    android:fontFamily="@font/geologica_regular" />
+                    android:fontFamily="@font/geologica_regular"
+            app:fontFamily="@font/geologica_regular" />
 
                 <EditText
                     android:id="@+id/et_mtu"
@@ -495,6 +520,7 @@
                     android:tag="accent_text"
                     android:textSize="16sp"
                     android:fontFamily="@font/geologica_medium"
+            app:fontFamily="@font/geologica_medium"
                     android:inputType="number"
                     android:imeOptions="actionDone" />
             </LinearLayout>
@@ -507,6 +533,7 @@
             android:textColor="@color/text_secondary"
             android:textSize="12sp"
             android:fontFamily="@font/geologica_regular"
+            app:fontFamily="@font/geologica_regular"
             android:layout_marginBottom="24dp"
             android:layout_marginStart="4dp"
             android:alpha="0.7" />
@@ -518,6 +545,7 @@
             android:textColor="@color/text_secondary"
             android:textSize="14sp"
             android:fontFamily="@font/geologica_medium"
+            app:fontFamily="@font/geologica_medium"
             android:layout_marginBottom="8dp"
             android:layout_marginStart="4dp" />
 
@@ -546,17 +574,19 @@
                     android:text="@string/settings_label_stack_title"
                     android:textColor="@color/text_primary"
                     android:textSize="16sp"
-                    android:fontFamily="@font/geologica_regular" />
+                    android:fontFamily="@font/geologica_regular"
+            app:fontFamily="@font/geologica_regular" />
 
                 <TextView
                     android:id="@+id/tv_stack_type_value"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Использовать mixed"
+                    android:text="@string/settings_label_stack"
                     android:textColor="@color/accent"
                     android:tag="accent_text"
                     android:textSize="16sp"
-                    android:fontFamily="@font/geologica_medium" />
+                    android:fontFamily="@font/geologica_medium"
+            app:fontFamily="@font/geologica_medium" />
             </LinearLayout>
         </LinearLayout>
 
@@ -567,6 +597,7 @@
             android:textColor="@color/text_secondary"
             android:textSize="12sp"
             android:fontFamily="@font/geologica_regular"
+            app:fontFamily="@font/geologica_regular"
             android:layout_marginBottom="24dp"
             android:layout_marginStart="4dp"
             android:alpha="0.7" />

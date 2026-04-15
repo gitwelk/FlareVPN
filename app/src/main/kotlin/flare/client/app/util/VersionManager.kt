@@ -56,7 +56,7 @@ object VersionManager {
 
                         AppNotificationManager.showSystemNotification(
                             context,
-                            "Flare Update",
+                            context.getString(R.string.notif_update_title),
                             message
                         )
                     }

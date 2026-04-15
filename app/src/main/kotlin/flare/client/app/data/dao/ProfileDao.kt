@@ -49,6 +49,12 @@ interface ProfileDao {
     @Query("DELETE FROM profiles WHERE subscriptionId = :subId")
     suspend fun deleteBySubscriptionId(subId: Long)
 
+    @Transaction
+    suspend fun replaceSubscriptionProfiles(subId: Long, profiles: List<ProfileEntity>) {
+        deleteBySubscriptionId(subId)
+        insertAll(profiles.map { it.copy(subscriptionId = subId) })
+    }
+
     @Query("DELETE FROM profiles WHERE subscriptionId IS NULL")
     suspend fun deleteStandaloneProfiles()
 }

@@ -92,6 +92,7 @@
                     android:textColor="@color/text_primary"
                     android:textSize="18sp"
                     android:fontFamily="@font/geologica_medium"
+            app:fontFamily="@font/geologica_medium"
                     android:visibility="gone"
                     app:layout_constraintTop_toBottomOf="@id/guideline_top_40"
                     app:layout_constraintStart_toStartOf="@id/btn_connect_container"
@@ -128,10 +129,11 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginBottom="8dp"
-                        android:text="Добавить профили"
+                        android:text="@string/label_add_profiles"
                         android:textColor="@color/text_secondary"
                         android:textSize="13sp"
-                        android:fontFamily="@font/geologica_regular" />
+                        android:fontFamily="@font/geologica_regular"
+            app:fontFamily="@font/geologica_regular" />
 
                     <TextView
                         android:id="@+id/tv_add_hint"
@@ -144,6 +146,7 @@
                         android:textColor="@color/text_secondary"
                         android:textSize="13sp"
                         android:fontFamily="@font/geologica_regular"
+            app:fontFamily="@font/geologica_regular"
                         android:visibility="gone" />
 
                     <FrameLayout
@@ -161,10 +164,11 @@
                             android:gravity="center"
                             android:paddingStart="28dp"
                             android:paddingEnd="28dp"
-                            android:text="Буфер обмена"
+                            android:text="@string/btn_clipboard"
                             android:textSize="14sp"
                             android:textColor="@color/white"
-                            android:fontFamily="@font/geologica_medium" />
+                            android:fontFamily="@font/geologica_medium"
+            app:fontFamily="@font/geologica_medium" />
 
                         <ProgressBar
                             android:id="@+id/pb_clipboard_loading"
@@ -246,6 +250,17 @@
                 app:layout_constraintBottom_toBottomOf="parent" />
 
             <include
+                android:id="@+id/layout_settings_language_container"
+                layout="@layout/layout_settings_language"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:visibility="gone"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintBottom_toBottomOf="parent" />
+
+            <include
                 android:id="@+id/layout_custom_servers_container"
                 layout="@layout/layout_servers"
                 android:layout_width="match_parent"
@@ -299,10 +314,11 @@
                         android:id="@+id/tv_json_title"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:text="Редактор конфига"
+                        android:text="@string/label_config_editor"
                         android:textColor="@color/text_primary"
                         android:textSize="18sp"
                         android:fontFamily="@font/geologica_medium"
+            app:fontFamily="@font/geologica_medium"
                         android:layout_marginStart="8dp"
                         android:layout_marginEnd="8dp"
                         android:ellipsize="end"
@@ -347,6 +363,7 @@
                             android:textColor="@color/text_secondary"
                             android:textSize="13sp"
                             android:fontFamily="@font/geologica_regular"
+            app:fontFamily="@font/geologica_regular"
                             android:layout_marginBottom="8dp" />
 
                         <EditText
@@ -358,6 +375,7 @@
                             android:textColor="@color/text_primary"
                             android:textSize="15sp"
                             android:fontFamily="@font/geologica_medium"
+            app:fontFamily="@font/geologica_medium"
                             android:inputType="text"
                             android:maxLines="1"
                             android:layout_marginBottom="24dp" />
@@ -369,6 +387,7 @@
                             android:textColor="@color/text_secondary"
                             android:textSize="13sp"
                             android:fontFamily="@font/geologica_regular"
+            app:fontFamily="@font/geologica_regular"
                             android:layout_marginBottom="8dp" />
 
                         <EditText
@@ -380,6 +399,7 @@
                             android:textColor="@color/text_primary"
                             android:textSize="14sp"
                             android:fontFamily="@font/geologica_regular"
+            app:fontFamily="@font/geologica_regular"
                             android:gravity="top|start"
                             android:inputType="textMultiLine"
                             android:minLines="10" />
@@ -398,6 +418,14 @@
                 <include layout="@layout/layout_simple_editor" />
             </androidx.constraintlayout.widget.ConstraintLayout>
 
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:id="@+id/layout_journal_container"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:visibility="gone">
+                <include layout="@layout/layout_journal" />
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
         </androidx.constraintlayout.widget.ConstraintLayout>
 
     </eightbitlab.com.blurview.BlurTarget>
@@ -408,12 +436,13 @@
         android:layout_height="wrap_content"
         android:layout_gravity="bottom" />
 
-    <include
-        android:id="@+id/notification_include"
-        layout="@layout/layout_notification"
+    <FrameLayout
+        android:id="@+id/notification_container"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="top"
+        android:clipChildren="false"
+        android:clipToPadding="false"
         android:layout_marginHorizontal="24dp"
         android:layout_marginTop="32dp" />
 

@@ -15,7 +15,9 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="20dp">
+        android:paddingTop="2dp"
+        android:paddingHorizontal="20dp"
+        android:paddingBottom="20dp">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -40,6 +42,7 @@
                 android:textColor="@color/text_primary"
                 android:textSize="22sp"
                 android:fontFamily="@font/geologica_medium"
+            app:fontFamily="@font/geologica_medium"
                 android:layout_marginStart="8dp" />
         </LinearLayout>
 
@@ -50,6 +53,7 @@
             android:textColor="@color/text_secondary"
             android:textSize="14sp"
             android:fontFamily="@font/geologica_medium"
+            app:fontFamily="@font/geologica_medium"
             android:layout_marginBottom="12dp"
             android:layout_marginStart="4dp" />
 
@@ -76,7 +80,8 @@
                     android:text="@string/settings_label_split_tunneling"
                     android:textColor="@color/text_primary"
                     android:textSize="16sp"
-                    android:fontFamily="@font/geologica_regular" />
+                    android:fontFamily="@font/geologica_regular"
+            app:fontFamily="@font/geologica_regular" />
 
                 <androidx.appcompat.widget.SwitchCompat
                     android:id="@+id/sw_split_tunneling"
@@ -110,10 +115,11 @@
                         android:id="@+id/tv_split_tunneling_desc"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Выберите приложения, которые будут использовать VPN."
+                        android:text="@string/desc_select_apps"
                         android:textColor="@color/text_primary"
                         android:textSize="14sp"
                         android:fontFamily="@font/geologica_regular"
+            app:fontFamily="@font/geologica_regular"
                         android:layout_marginBottom="16dp"
                         android:alpha="0.7" />
 
@@ -130,6 +136,7 @@
                             android:textColor="@color/text_primary"
                             android:textSize="16sp"
                             android:fontFamily="@font/geologica_medium"
+            app:fontFamily="@font/geologica_medium"
                             android:textAllCaps="false" />
 
                         <ProgressBar
@@ -153,6 +160,7 @@
             android:textColor="@color/text_secondary"
             android:textSize="14sp"
             android:fontFamily="@font/geologica_medium"
+            app:fontFamily="@font/geologica_medium"
             android:layout_marginBottom="12dp"
             android:layout_marginStart="4dp" />
 
@@ -189,7 +197,8 @@
                             android:text="@string/settings_label_autostart"
                             android:textColor="@color/text_primary"
                             android:textSize="16sp"
-                            android:fontFamily="@font/geologica_regular" />
+                            android:fontFamily="@font/geologica_regular"
+            app:fontFamily="@font/geologica_regular" />
 
                     </LinearLayout>
 
@@ -210,6 +219,7 @@
             android:textColor="@color/text_secondary"
             android:textSize="14sp"
             android:fontFamily="@font/geologica_medium"
+            app:fontFamily="@font/geologica_medium"
             android:layout_marginBottom="12dp"
             android:layout_marginStart="4dp" />
 
@@ -238,7 +248,8 @@
                     android:text="@string/settings_label_status"
                     android:textColor="@color/text_primary"
                     android:textSize="16sp"
-                    android:fontFamily="@font/geologica_regular" />
+                    android:fontFamily="@font/geologica_regular"
+            app:fontFamily="@font/geologica_regular" />
 
                 <androidx.appcompat.widget.SwitchCompat
                     android:id="@+id/sw_notifications"
@@ -273,7 +284,8 @@
                     android:text="@string/settings_label_best_profile_notif"
                     android:textColor="@color/text_primary"
                     android:textSize="16sp"
-                    android:fontFamily="@font/geologica_regular" />
+                    android:fontFamily="@font/geologica_regular"
+            app:fontFamily="@font/geologica_regular" />
 
                 <androidx.appcompat.widget.SwitchCompat
                     android:id="@+id/sw_best_profile_notif"
@@ -288,10 +300,217 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:text="@string/settings_header_hwid"
+            android:textColor="@color/text_secondary"
+            android:textSize="14sp"
+            android:fontFamily="@font/geologica_medium"
+            app:fontFamily="@font/geologica_medium"
+            android:layout_marginBottom="12dp"
+            android:layout_marginStart="4dp" />
+
+        <LinearLayout
+            android:id="@+id/block_hwid"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginBottom="12dp">
+
+            <LinearLayout
+                android:id="@+id/btn_toggle_hwid"
+                android:layout_width="match_parent"
+                android:layout_height="64dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:background="@drawable/bg_grouped_all"
+                android:paddingHorizontal="16dp"
+                android:clickable="true"
+                android:focusable="true">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/settings_label_send_hwid"
+                    android:textColor="@color/text_primary"
+                    android:textSize="16sp"
+                    android:fontFamily="@font/geologica_regular"
+                    app:fontFamily="@font/geologica_regular" />
+
+                <androidx.appcompat.widget.SwitchCompat
+                    android:id="@+id/sw_hwid"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:thumbTint="@color/white"
+                    app:trackTint="@color/accent"
+                    android:clickable="false" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/settings_desc_hwid"
+            android:textColor="@color/text_secondary"
+            android:textSize="13sp"
+            android:fontFamily="@font/geologica_regular"
+            app:fontFamily="@font/geologica_regular"
+            android:layout_marginBottom="24dp"
+            android:layout_marginStart="4dp"
+            android:layout_marginEnd="4dp"
+            android:alpha="0.8" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/settings_header_logging"
+            android:textColor="@color/text_secondary"
+            android:textSize="14sp"
+            android:fontFamily="@font/geologica_medium"
+            app:fontFamily="@font/geologica_medium"
+            android:layout_marginBottom="12dp"
+            android:layout_marginStart="4dp" />
+
+        <LinearLayout
+            android:id="@+id/block_logging"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginBottom="12dp">
+
+            <LinearLayout
+                android:id="@+id/btn_toggle_core_log"
+                android:layout_width="match_parent"
+                android:layout_height="64dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:background="@drawable/bg_grouped_all"
+                android:paddingHorizontal="16dp"
+                android:clickable="true"
+                android:focusable="true">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/settings_label_core_log"
+                    android:textColor="@color/text_primary"
+                    android:textSize="16sp"
+                    android:fontFamily="@font/geologica_regular"
+                    app:fontFamily="@font/geologica_regular" />
+
+                <androidx.appcompat.widget.SwitchCompat
+                    android:id="@+id/sw_core_log"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:thumbTint="@color/white"
+                    app:trackTint="@color/accent"
+                    android:clickable="false" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/layout_core_log_sub"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginStart="16dp"
+                    android:background="@color/divider_color" />
+
+                <LinearLayout
+                    android:id="@+id/btn_core_log_level"
+                    android:layout_width="match_parent"
+                    android:layout_height="64dp"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:background="@drawable/bg_grouped_middle"
+                    android:paddingHorizontal="16dp"
+                    android:clickable="true"
+                    android:focusable="true">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/settings_label_core_log_level"
+                        android:textColor="@color/text_primary"
+                        android:textSize="16sp"
+                        android:fontFamily="@font/geologica_regular"
+                        app:fontFamily="@font/geologica_regular" />
+
+                    <TextView
+                        android:id="@+id/tv_core_log_level_value"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="warn"
+                        android:textColor="@color/accent"
+                        android:tag="accent_text"
+                        android:textSize="16sp"
+                        android:fontFamily="@font/geologica_medium"
+                        app:fontFamily="@font/geologica_medium" />
+                </LinearLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginStart="16dp"
+                    android:background="@color/divider_color" />
+
+                <LinearLayout
+                    android:id="@+id/btn_view_journal"
+                    android:layout_width="match_parent"
+                    android:layout_height="64dp"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:background="@drawable/bg_grouped_bottom"
+                    android:paddingHorizontal="16dp"
+                    android:clickable="true"
+                    android:focusable="true">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/settings_btn_journal"
+                        android:textColor="@color/text_primary"
+                        android:textSize="16sp"
+                        android:fontFamily="@font/geologica_regular"
+                        app:fontFamily="@font/geologica_regular" />
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@drawable/ic_arrow_left"
+                        android:rotation="180"
+                        app:tint="@color/text_secondary" />
+                </LinearLayout>
+            </LinearLayout>
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/settings_desc_logging"
+            android:textColor="@color/text_secondary"
+            android:textSize="13sp"
+            android:fontFamily="@font/geologica_regular"
+            app:fontFamily="@font/geologica_regular"
+            android:layout_marginBottom="24dp"
+            android:layout_marginStart="4dp"
+            android:layout_marginEnd="4dp"
+            android:alpha="0.8" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:text="@string/settings_header_best_profile"
             android:textColor="@color/text_secondary"
             android:textSize="14sp"
             android:fontFamily="@font/geologica_medium"
+            app:fontFamily="@font/geologica_medium"
             android:layout_marginBottom="8dp"
             android:layout_marginStart="4dp" />
 
@@ -318,7 +537,8 @@
                     android:text="@string/settings_label_best_profile"
                     android:textColor="@color/text_primary"
                     android:textSize="16sp"
-                    android:fontFamily="@font/geologica_regular" />
+                    android:fontFamily="@font/geologica_regular"
+            app:fontFamily="@font/geologica_regular" />
 
                 <androidx.appcompat.widget.SwitchCompat
                     android:id="@+id/sw_best_profile"
@@ -356,7 +576,8 @@
                         android:text="@string/settings_label_best_profile_interval"
                         android:textColor="@color/text_primary"
                         android:textSize="16sp"
-                        android:fontFamily="@font/geologica_regular" />
+                        android:fontFamily="@font/geologica_regular"
+            app:fontFamily="@font/geologica_regular" />
 
                     <EditText
                         android:id="@+id/et_best_profile_interval"
@@ -371,17 +592,19 @@
                         android:tag="accent_text"
                         android:textSize="16sp"
                         android:fontFamily="@font/geologica_medium"
+            app:fontFamily="@font/geologica_medium"
                         android:inputType="number"
                         android:imeOptions="actionDone" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="с"
+                        android:text="@string/label_seconds_short"
                         android:textColor="@color/accent"
                         android:tag="accent_text"
                         android:textSize="16sp"
                         android:fontFamily="@font/geologica_medium"
+            app:fontFamily="@font/geologica_medium"
                         android:layout_marginStart="2dp" />
                 </LinearLayout>
 
@@ -409,7 +632,8 @@
                         android:text="@string/settings_label_best_profile_only_connected"
                         android:textColor="@color/text_primary"
                         android:textSize="16sp"
-                        android:fontFamily="@font/geologica_regular" />
+                        android:fontFamily="@font/geologica_regular"
+            app:fontFamily="@font/geologica_regular" />
 
                     <TextView
                         android:id="@+id/tv_best_profile_only_connected_value"
@@ -419,7 +643,8 @@
                         android:textColor="@color/accent"
                         android:tag="accent_text"
                         android:textSize="16sp"
-                        android:fontFamily="@font/geologica_medium" />
+                        android:fontFamily="@font/geologica_medium"
+            app:fontFamily="@font/geologica_medium" />
                 </LinearLayout>
             </LinearLayout>
         </LinearLayout>
@@ -431,6 +656,7 @@
             android:textColor="@color/text_secondary"
             android:textSize="13sp"
             android:fontFamily="@font/geologica_regular"
+            app:fontFamily="@font/geologica_regular"
             android:layout_marginBottom="24dp"
             android:layout_marginStart="4dp"
             android:layout_marginEnd="4dp"
@@ -443,6 +669,7 @@
             android:textColor="@color/text_secondary"
             android:textSize="14sp"
             android:fontFamily="@font/geologica_medium"
+            app:fontFamily="@font/geologica_medium"
             android:layout_marginBottom="8dp"
             android:layout_marginStart="4dp" />
 
@@ -469,7 +696,8 @@
                     android:text="@string/settings_label_update_check"
                     android:textColor="@color/text_primary"
                     android:textSize="16sp"
-                    android:fontFamily="@font/geologica_regular" />
+                    android:fontFamily="@font/geologica_regular"
+            app:fontFamily="@font/geologica_regular" />
 
                 <androidx.appcompat.widget.SwitchCompat
                     android:id="@+id/sw_update_check"
@@ -510,7 +738,8 @@
                         android:text="@string/settings_label_update_frequency"
                         android:textColor="@color/text_primary"
                         android:textSize="16sp"
-                        android:fontFamily="@font/geologica_regular" />
+                        android:fontFamily="@font/geologica_regular"
+            app:fontFamily="@font/geologica_regular" />
 
                     <TextView
                         android:id="@+id/tv_update_frequency_value"
@@ -520,7 +749,8 @@
                         android:textColor="@color/accent"
                         android:tag="accent_text"
                         android:textSize="16sp"
-                        android:fontFamily="@font/geologica_medium" />
+                        android:fontFamily="@font/geologica_medium"
+            app:fontFamily="@font/geologica_medium" />
                 </LinearLayout>
             </LinearLayout>
         </LinearLayout>
@@ -532,6 +762,7 @@
             android:textColor="@color/text_secondary"
             android:textSize="13sp"
             android:fontFamily="@font/geologica_regular"
+            app:fontFamily="@font/geologica_regular"
             android:layout_marginBottom="24dp"
             android:layout_marginStart="4dp"
             android:layout_marginEnd="4dp"

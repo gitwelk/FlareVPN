@@ -18,10 +18,11 @@
             android:id="@+id/tv_servers_title"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Сервера"
+            android:text="@string/label_servers"
             android:textColor="@color/text_primary"
             android:textSize="26sp"
             android:fontFamily="@font/geologica_medium"
+            app:fontFamily="@font/geologica_medium"
             android:layout_marginBottom="24dp" />
 
         <FrameLayout
@@ -69,7 +70,8 @@
                             android:text="@string/servers_title_flare"
                             android:textColor="@color/text_primary"
                             android:textSize="18sp"
-                            android:fontFamily="@font/geologica_medium" />
+                            android:fontFamily="@font/geologica_medium"
+            app:fontFamily="@font/geologica_medium" />
                     </LinearLayout>
 
                     <TextView
@@ -80,6 +82,7 @@
                         android:textColor="@color/text_secondary"
                         android:textSize="14sp"
                         android:fontFamily="@font/geologica_regular"
+            app:fontFamily="@font/geologica_regular"
                         android:lineSpacingExtra="2dp" />
                 </LinearLayout>
 
@@ -117,7 +120,8 @@
                             android:text="@string/servers_title_create"
                             android:textColor="@color/text_primary"
                             android:textSize="18sp"
-                            android:fontFamily="@font/geologica_medium" />
+                            android:fontFamily="@font/geologica_medium"
+            app:fontFamily="@font/geologica_medium" />
                     </LinearLayout>
 
                     <TextView
@@ -128,6 +132,7 @@
                         android:textColor="@color/text_secondary"
                         android:textSize="14sp"
                         android:fontFamily="@font/geologica_regular"
+            app:fontFamily="@font/geologica_regular"
                         android:lineSpacingExtra="2dp" />
                 </LinearLayout>
 
@@ -147,6 +152,7 @@
                     android:textColor="@color/text_secondary"
                     android:textSize="13sp"
                     android:fontFamily="@font/geologica_regular"
+            app:fontFamily="@font/geologica_regular"
                     android:layout_marginBottom="8dp" />
 
                 <FrameLayout
@@ -165,6 +171,7 @@
                         android:textSize="15sp"
                         android:hint="@string/servers_ssh_profile_name_hint"
                         android:fontFamily="@font/geologica_medium"
+            app:fontFamily="@font/geologica_medium"
                         android:maxLines="1"
                         android:inputType="textPersonName" />
                 </FrameLayout>
@@ -189,6 +196,7 @@
                             android:textColor="@color/text_secondary"
                             android:textSize="13sp"
                             android:fontFamily="@font/geologica_regular"
+            app:fontFamily="@font/geologica_regular"
                             android:layout_marginBottom="8dp" />
 
                         <FrameLayout
@@ -207,6 +215,7 @@
                                 android:textSize="15sp"
                                 android:hint="0.0.0.0"
                                 android:fontFamily="@font/geologica_medium"
+            app:fontFamily="@font/geologica_medium"
                                 android:maxLines="1"
                                 android:inputType="text" />
 
@@ -233,6 +242,7 @@
                             android:textColor="@color/text_secondary"
                             android:textSize="13sp"
                             android:fontFamily="@font/geologica_regular"
+            app:fontFamily="@font/geologica_regular"
                             android:layout_marginBottom="8dp" />
 
                         <EditText
@@ -246,6 +256,7 @@
                             android:textSize="15sp"
                             android:hint="@string/servers_ssh_port_hint"
                             android:fontFamily="@font/geologica_medium"
+            app:fontFamily="@font/geologica_medium"
                             android:maxLines="1"
                             android:inputType="number" />
                     </LinearLayout>
@@ -258,6 +269,7 @@
                     android:textColor="@color/text_secondary"
                     android:textSize="13sp"
                     android:fontFamily="@font/geologica_regular"
+            app:fontFamily="@font/geologica_regular"
                     android:layout_marginBottom="8dp" />
 
                 <FrameLayout
@@ -277,6 +289,7 @@
                         android:textSize="15sp"
                         android:hint="root"
                         android:fontFamily="@font/geologica_medium"
+            app:fontFamily="@font/geologica_medium"
                         android:maxLines="1"
                         android:inputType="text" />
 
@@ -297,6 +310,7 @@
                     android:textColor="@color/text_secondary"
                     android:textSize="13sp"
                     android:fontFamily="@font/geologica_regular"
+            app:fontFamily="@font/geologica_regular"
                     android:layout_marginBottom="8dp" />
 
                 <FrameLayout
@@ -314,6 +328,7 @@
                         android:textColorHint="@color/text_secondary"
                         android:textSize="15sp"
                         android:fontFamily="@font/geologica_medium"
+            app:fontFamily="@font/geologica_medium"
                         android:inputType="textPassword"
                         android:maxLines="1" />
 
@@ -361,6 +376,7 @@
                     android:textColor="@color/text_secondary"
                     android:textSize="13sp"
                     android:fontFamily="@font/geologica_regular"
+            app:fontFamily="@font/geologica_regular"
                     android:layout_marginBottom="16dp" />
 
                 <LinearLayout
@@ -394,7 +410,8 @@
                             android:text="@string/servers_protocol_xray_title"
                             android:textColor="@color/white"
                             android:textSize="16sp"
-                            android:fontFamily="@font/geologica_medium" />
+                            android:fontFamily="@font/geologica_medium"
+            app:fontFamily="@font/geologica_medium" />
                     </LinearLayout>
 
                     <TextView
@@ -405,6 +422,7 @@
                         android:textSize="13sp"
                         android:alpha="0.8"
                         android:fontFamily="@font/geologica_regular"
+            app:fontFamily="@font/geologica_regular"
                         android:lineSpacingExtra="1dp" />
                 </LinearLayout>
             </LinearLayout>
@@ -424,6 +442,7 @@
                     android:textColor="@color/text_primary"
                     android:textSize="22sp"
                     android:fontFamily="@font/geologica_medium"
+            app:fontFamily="@font/geologica_medium"
                     android:layout_marginBottom="32dp"
                     android:layout_marginTop="16dp" />
 
@@ -440,6 +459,7 @@
                         android:textColor="@color/text_secondary"
                         android:textSize="13sp"
                         android:fontFamily="@font/geologica_regular"
+            app:fontFamily="@font/geologica_regular"
                         android:layout_marginBottom="8dp" />
 
                     <EditText
@@ -453,6 +473,7 @@
                         android:textSize="15sp"
                         android:hint="443"
                         android:fontFamily="@font/geologica_medium"
+            app:fontFamily="@font/geologica_medium"
                         android:maxLines="1"
                         android:inputType="number"
                         android:layout_marginBottom="4dp" />
@@ -465,6 +486,7 @@
                         android:textSize="13sp"
                         android:alpha="0.7"
                         android:fontFamily="@font/geologica_regular"
+            app:fontFamily="@font/geologica_regular"
                         android:layout_marginBottom="24dp" />
 
                     <TextView
@@ -474,6 +496,7 @@
                         android:textColor="@color/text_secondary"
                         android:textSize="13sp"
                         android:fontFamily="@font/geologica_regular"
+            app:fontFamily="@font/geologica_regular"
                         android:layout_marginBottom="8dp" />
 
                     <EditText
@@ -487,6 +510,7 @@
                         android:textSize="15sp"
                         android:hint="google.com"
                         android:fontFamily="@font/geologica_medium"
+            app:fontFamily="@font/geologica_medium"
                         android:maxLines="1"
                         android:inputType="text"
                         android:layout_marginBottom="4dp" />
@@ -499,6 +523,7 @@
                         android:textSize="13sp"
                         android:alpha="0.7"
                         android:fontFamily="@font/geologica_regular"
+            app:fontFamily="@font/geologica_regular"
                         android:layout_marginBottom="16dp" />
                 </LinearLayout>
             </LinearLayout>
@@ -561,6 +586,7 @@
                     android:textColor="@color/text_primary"
                     android:textSize="22sp"
                     android:fontFamily="@font/geologica_medium"
+            app:fontFamily="@font/geologica_medium"
                     android:layout_marginBottom="12dp"
                     android:gravity="center" />
 
@@ -571,6 +597,7 @@
                     android:textColor="@color/text_secondary"
                     android:textSize="15sp"
                     android:fontFamily="@font/geologica_regular"
+            app:fontFamily="@font/geologica_regular"
                     android:gravity="center" />
 
                 <LinearLayout
@@ -599,10 +626,11 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="12dp"
-                        android:text="На главную"
+                        android:text="@string/onboarding_btn_go_main"
                         android:textColor="@color/text_primary"
                         android:textSize="15sp"
-                        android:fontFamily="@font/geologica_medium" />
+                        android:fontFamily="@font/geologica_medium"
+            app:fontFamily="@font/geologica_medium" />
                 </LinearLayout>
             </LinearLayout>
 

@@ -27,6 +27,7 @@
         android:textColor="@color/text_primary"
         android:textSize="15sp"
         android:fontFamily="@font/geologica_regular"
+            app:fontFamily="@font/geologica_regular"
         android:ellipsize="end"
         android:maxLines="1" />
 

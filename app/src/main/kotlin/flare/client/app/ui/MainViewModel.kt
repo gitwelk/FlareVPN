@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.net.VpnService
+import android.os.SystemClock
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import flare.client.app.data.db.AppDatabase
@@ -14,6 +15,9 @@ import flare.client.app.data.model.ProfileEntity
 import flare.client.app.data.model.SubscriptionEntity
 import flare.client.app.data.model.PingState
 import flare.client.app.data.parser.ClipboardParser
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import flare.client.app.data.repository.ProfileRepository
 import flare.client.app.data.SettingsManager
 import flare.client.app.service.FlareVpnService
@@ -143,7 +147,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val subName = if (subId == VIRTUAL_SUB_ID) {
             getApplication<Application>().getString(R.string.sub_single_profiles)
         } else {
-            displayItems.value.filterIsInstance<DisplayItem.SubscriptionItem>().find { it.entity.id == subId }?.entity?.name ?: "Неизвестно"
+            displayItems.value.filterIsInstance<DisplayItem.SubscriptionItem>().find { it.entity.id == subId }?.entity?.name ?: getApplication<Application>().getString(R.string.label_unknown)
         }
         viewModelScope.launch {
             if (subId == VIRTUAL_SUB_ID) {
@@ -226,28 +230,34 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch(Dispatchers.IO) {
             _importEvent.emit(ImportEvent.Loading)
             try {
+                val app = getApplication<Application>()
+                val settings = SettingsManager(app)
+                val hwid = if (settings.isHwidEnabled) getHwid() else null
+                val model = android.os.Build.MODEL
+                val osVersion = android.os.Build.VERSION.RELEASE
+                
                 kotlinx.coroutines.withTimeout(10000L) {
-                    when (val result = ClipboardParser.parse(text)) {
+                    when (val result = ClipboardParser.parse(app, text, hwid, model, osVersion)) {
                         is ClipboardParser.ParseResult.SingleProfile -> {
                             repository.insertProfile(result.profile)
-                            _importEvent.emit(ImportEvent.Success("Профиль ${result.profile.name} успешно добавлен!"))
+                            _importEvent.emit(ImportEvent.Success(getApplication<Application>().getString(R.string.success_profile_added, result.profile.name)))
                         }
                         is ClipboardParser.ParseResult.Subscription -> {
                             repository.insertSubscriptionWithProfiles(result.subscription, result.profiles)
-                            _importEvent.emit(ImportEvent.Success("Подписка ${result.subscription.name} успешно добавлена!"))
+                            _importEvent.emit(ImportEvent.Success(getApplication<Application>().getString(R.string.success_subscription_added, result.subscription.name)))
                         }
                         is ClipboardParser.ParseResult.Error -> {
-                            _importEvent.emit(ImportEvent.Error("Не удалось добавить подписку или профиль!"))
+                            _importEvent.emit(ImportEvent.Error(result.message))
                         }
                         else -> {
-                            _importEvent.emit(ImportEvent.Error("Не удалось добавить подписку или профиль!"))
+                            _importEvent.emit(ImportEvent.Error(getApplication<Application>().getString(R.string.error_import_failed)))
                         }
                     }
                 }
             } catch (e: kotlinx.coroutines.TimeoutCancellationException) {
-                _importEvent.emit(ImportEvent.Error("Не удалось добавить подписку или профиль! (таймаут 10 сек)"))
+                _importEvent.emit(ImportEvent.Error(getApplication<Application>().getString(R.string.error_import_timeout)))
             } catch (e: Exception) {
-                _importEvent.emit(ImportEvent.Error("Не удалось добавить подписку или профиль!"))
+                _importEvent.emit(ImportEvent.Error(getApplication<Application>().getString(R.string.error_import_failed)))
             }
         }
     }
@@ -261,7 +271,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
             val vpnIntent = VpnService.prepare(app)
             if (vpnIntent != null) { _importEvent.emit(ImportEvent.NeedPermission(vpnIntent)); return@launch }
-            _connectionState.value = ConnectionState.CONNECTING
             _connectionState.value = ConnectionState.CONNECTING
             val intent = Intent(app, FlareVpnService::class.java).apply {
                 action = FlareVpnService.ACTION_START
@@ -281,9 +290,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         timerJob?.cancel()
         timerJob = viewModelScope.launch {
             val baseTime = flare.client.app.singbox.SingBoxManager.startTime
-            val start = if (baseTime > 0) baseTime else System.currentTimeMillis()
+            val start = if (baseTime > 0) baseTime else SystemClock.elapsedRealtime()
             while (true) {
-                _connectionTimerText.value = formatDuration(System.currentTimeMillis() - start)
+                _connectionTimerText.value = formatDuration(SystemClock.elapsedRealtime() - start)
                 delay(1000)
             }
         }
@@ -375,8 +384,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
         speedTestProfile(profiles)
 
-        val deadline = System.currentTimeMillis() + 15_000L
-        while (System.currentTimeMillis() < deadline) {
+        val deadline = SystemClock.elapsedRealtime() + 15_000L
+        while (SystemClock.elapsedRealtime() < deadline) {
             val pings = _pingStates.value
             val allDone = profiles.all { p ->
                 val state = pings[p.id]
@@ -417,18 +426,35 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         if (subs.isEmpty()) return@withContext
         var successCount = 0
         val selectedBefore = repository.getSelectedProfile()
-        subs.forEach { sub ->
-            try {
-                val result = withTimeoutOrNull(10000L) {
-                    ClipboardParser.parse(sub.url)
+        val app = getApplication<Application>()
+        val settings = SettingsManager(app)
+        val hwid = if (settings.isHwidEnabled) getHwid() else null
+        val model = android.os.Build.MODEL
+        val osVersion = android.os.Build.VERSION.RELEASE
+        
+        coroutineScope {
+            val deferreds = subs.map { sub ->
+                async {
+                    try {
+                        _refreshingSubs.update { it + sub.id }
+                        val result = withTimeoutOrNull(10000L) {
+                            ClipboardParser.parse(app, sub.url, hwid, model, osVersion)
+                        }
+                        if (result is ClipboardParser.ParseResult.Subscription) {
+                            repository.replaceSubscriptionProfiles(sub.id, result.profiles)
+                            repository.updateSubscription(result.subscription.copy(id = sub.id))
+                            true
+                        } else false
+                    } catch (e: Exception) {
+                        Log.e("MainViewModel", "Failed to refresh ${sub.name}", e)
+                        false
+                    } finally {
+                        _refreshingSubs.update { it - sub.id }
+                    }
                 }
-                if (result is ClipboardParser.ParseResult.Subscription) {
-                    repository.deleteProfilesBySubscription(sub.id)
-                    db.profileDao().insertAll(result.profiles.map { it.copy(subscriptionId = sub.id) })
-                    repository.updateSubscription(result.subscription.copy(id = sub.id))
-                    successCount++
-                }
-            } catch (e: Exception) { Log.e("MainViewModel", "Failed to refresh ${sub.name}", e) }
+            }
+            val results = deferreds.awaitAll()
+            successCount = results.count { it }
         }
         if (selectedBefore != null) {
             val allAfter = repository.getAllProfiles().first()
@@ -444,9 +470,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 _selectedProfileId.value = null
             }
         }
-        val app = getApplication<Application>()
         if (successCount > 0) {
-            val settings = SettingsManager(app)
             settings.lastSubUpdateTime = System.currentTimeMillis()
             flare.client.app.ui.notification.AppNotificationManager.showNotification(
                 flare.client.app.ui.notification.NotificationType.SUCCESS,
@@ -465,14 +489,18 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun refreshSubscription(sub: SubscriptionEntity) {
         viewModelScope.launch(Dispatchers.IO) {
             _refreshingSubs.update { it + sub.id }
+            val app = getApplication<Application>()
+            val settings = SettingsManager(app)
+            val hwid = if (settings.isHwidEnabled) getHwid() else null
+            val model = android.os.Build.MODEL
+            val osVersion = android.os.Build.VERSION.RELEASE
             try {
                 val selectedBefore = repository.getSelectedProfile()
                 val result = withTimeoutOrNull(10000L) {
-                    ClipboardParser.parse(sub.url)
+                    ClipboardParser.parse(app, sub.url, hwid, model, osVersion)
                 }
                 if (result is ClipboardParser.ParseResult.Subscription) {
-                    repository.deleteProfilesBySubscription(sub.id)
-                    db.profileDao().insertAll(result.profiles.map { it.copy(subscriptionId = sub.id) })
+                    repository.replaceSubscriptionProfiles(sub.id, result.profiles)
                     repository.updateSubscription(result.subscription.copy(id = sub.id))
                     if (selectedBefore != null) {
                         if (selectedBefore.subscriptionId == sub.id) {
@@ -492,14 +520,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                             _selectedProfileId.value = selectedBefore.id
                         }
                     }
-                    val app = getApplication<Application>()
                     flare.client.app.ui.notification.AppNotificationManager.showNotification(
                         flare.client.app.ui.notification.NotificationType.SUCCESS,
                         app.getString(R.string.sub_update_success_single, sub.name),
                         3
                     )
                 } else {
-                    val app = getApplication<Application>()
                     flare.client.app.ui.notification.AppNotificationManager.showNotification(
                         flare.client.app.ui.notification.NotificationType.ERROR,
                         app.getString(R.string.sub_update_error_single),
@@ -508,7 +534,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 }
             } catch (e: Exception) {
                 Log.e("MainViewModel", "Failed to refresh ${sub.name}", e)
-                val app = getApplication<Application>()
                 flare.client.app.ui.notification.AppNotificationManager.showNotification(
                     flare.client.app.ui.notification.NotificationType.ERROR,
                     app.getString(R.string.sub_update_error_single),
@@ -520,7 +545,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun addPrivateServer(host: String, configJson: String) {
+    fun addPrivateServer(uri: String, name: String) {
         viewModelScope.launch {
             val app = getApplication<Application>()
             val subName = app.getString(R.string.sub_my_servers)
@@ -535,15 +560,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 val id = repository.insertSubscription(newSub)
                 sub = newSub.copy(id = id)
             }
-            val profile = ProfileEntity(
-                name = host,
-                uri = "vless://$host",
-                configJson = configJson,
-                subscriptionId = sub.id
-            )
+            
+            val profile = ClipboardParser.buildProfileFromUri(app, uri, sub.id).copy(name = name)
             repository.insertProfile(profile)
+            
             val allProfiles = repository.getAllProfiles().first()
-            val savedProfile = allProfiles.find { it.configJson == configJson && it.subscriptionId == sub.id }
+            val savedProfile = allProfiles.find { it.uri == uri && it.subscriptionId == sub.id }
             if (savedProfile != null) {
                 selectProfile(savedProfile.id)
             }
@@ -590,9 +612,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             
             while (isActive) {
                 val intervalHours = when (settings.updateCheckFrequency) {
-                    app.getString(R.string.update_freq_daily) -> 24L
-                    app.getString(R.string.update_freq_weekly) -> 168L
-                    app.getString(R.string.update_freq_monthly) -> 720L
+                    "daily" -> 24L
+                    "weekly" -> 168L
+                    "monthly" -> 720L
                     else -> 24L
                 }
                 val intervalMs = intervalHours * 3600 * 1000L
@@ -610,5 +632,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 }
             }
         }
+    }
+
+    private fun getHwid(): String {
+        return android.provider.Settings.Secure.getString(
+            getApplication<Application>().contentResolver,
+            android.provider.Settings.Secure.ANDROID_ID
+        ) ?: "unknown_hwid"
     }
 }

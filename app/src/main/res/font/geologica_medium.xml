@@ -1,7 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<font-family xmlns:app="http://schemas.android.com/apk/res-auto"
-    app:fontProviderAuthority="com.google.android.gms.fonts"
-    app:fontProviderPackage="com.google.android.gms"
-    app:fontProviderQuery="Geologica:wght@500"
-    app:fontProviderCerts="@array/com_google_android_gms_fonts_certs">
+<font-family xmlns:android="http://schemas.android.com/apk/res/android"
+             xmlns:app="http://schemas.android.com/apk/res-auto">
+    <font
+        android:fontStyle="normal"
+        android:fontWeight="500"
+        android:font="@font/geologica_medium_font"
+        app:fontStyle="normal"
+        app:fontWeight="500"
+        app:font="@font/geologica_medium_font" />
 </font-family>

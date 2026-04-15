@@ -29,6 +29,8 @@ import android.view.ViewGroup
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.snackbar.Snackbar
@@ -42,6 +44,9 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.isActive
 import androidx.core.content.ContextCompat
 import androidx.core.content.res.ResourcesCompat
 import android.view.animation.DecelerateInterpolator
@@ -56,6 +61,25 @@ import eightbitlab.com.blurview.BlurTarget
 
 class MainActivity : AppCompatActivity() {
 
+    
+    
+    override fun attachBaseContext(newBase: Context) {
+        val lang = newBase
+            .getSharedPreferences("flare_settings", Context.MODE_PRIVATE)
+            .getString("app_language", "auto") ?: "auto"
+        val wrapped = if (lang == "en" || lang == "ru") {
+            val locale = java.util.Locale(lang)
+            java.util.Locale.setDefault(locale)
+            val cfg = android.content.res.Configuration(newBase.resources.configuration)
+            cfg.setLocale(locale)
+            newBase.createConfigurationContext(cfg)
+        } else {
+            newBase
+        }
+        super.attachBaseContext(wrapped)
+    }
+
+
     private lateinit var binding: ActivityMainBinding
     private val viewModel: MainViewModel by viewModels()
     private lateinit var settings: SettingsManager
@@ -68,6 +92,10 @@ class MainActivity : AppCompatActivity() {
     private var currentTabIndex = 1
 
     private var gradientAnimator: ValueAnimator? = null
+    private var loadingDialog: Dialog? = null
+    private var logJob: kotlinx.coroutines.Job? = null
+
+
 
     
     private var runtimeAccentColor: Int = COLOR_DEFAULT
@@ -78,7 +106,7 @@ class MainActivity : AppCompatActivity() {
                 if (result.resultCode == RESULT_OK) {
                     viewModel.connectOrDisconnect()
                 } else {
-                    showSnackbar("Разрешение VPN отклонено")
+                    showSnackbar(getString(R.string.vpn_error_permission_denied))
                 }
             }
 
@@ -87,7 +115,7 @@ class MainActivity : AppCompatActivity() {
                 if (isGranted) {
                     showTestNotification()
                 } else {
-                    showSnackbar("Разрешение на уведомления отклонено")
+                    showSnackbar(getString(R.string.onboarding_notifications_error))
                     val baseInclude = findViewById<View>(flare.client.app.R.id.layout_settings_base_container)
                     val swNotif = baseInclude?.findViewById<androidx.appcompat.widget.SwitchCompat>(flare.client.app.R.id.sw_notifications)
                     swNotif?.isChecked = false
@@ -102,7 +130,7 @@ class MainActivity : AppCompatActivity() {
                     updateOnboardingPermissionState(b.btnPermissionNotifications, b.ivNotifCheck, true)
                     checkOnboardingPermissions()
                 } else {
-                    showSnackbar("Разрешение на уведомления отклонено")
+                    showSnackbar(getString(R.string.onboarding_notifications_error))
                 }
             }
 
@@ -118,6 +146,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         WindowCompat.setDecorFitsSystemWindows(window, false)
         window.statusBarColor = android.graphics.Color.TRANSPARENT
         window.navigationBarColor = android.graphics.Color.TRANSPARENT
@@ -132,9 +161,10 @@ class MainActivity : AppCompatActivity() {
             lastThemeChangeTime = System.currentTimeMillis()
         }
         lastUiMode = currentUiMode
+        settings = SettingsManager(this)
+
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        settings = SettingsManager(this)
         checkThemeTransition()
 
         binding.root.clipToPadding = false
@@ -155,9 +185,11 @@ class MainActivity : AppCompatActivity() {
                 flare.client.app.R.id.layout_settings_base_container,
                 flare.client.app.R.id.layout_settings_subscriptions_container,
                 flare.client.app.R.id.layout_settings_theme_container,
+                flare.client.app.R.id.layout_settings_language_container,
                 flare.client.app.R.id.layout_custom_servers_container,
                 flare.client.app.R.id.toolbar_json,
-                flare.client.app.R.id.toolbar_simple
+                flare.client.app.R.id.toolbar_simple,
+                flare.client.app.R.id.toolbar_journal
             )
             topPaddedViews.forEach { id ->
                 findViewById<View>(id)?.let { view ->
@@ -169,7 +201,7 @@ class MainActivity : AppCompatActivity() {
                     )
                 }
             }
-            val notificationView = findViewById<View>(flare.client.app.R.id.notification_include)
+            val notificationView = findViewById<View>(flare.client.app.R.id.notification_container)
             if (notificationView != null) {
                 val params = notificationView.layoutParams as ViewGroup.MarginLayoutParams
                 params.topMargin = systemBars.top + (16 * density).toInt()
@@ -218,32 +250,46 @@ class MainActivity : AppCompatActivity() {
                         } else if (findViewById<View>(flare.client.app.R.id.layout_simple_editor)?.visibility == View.VISIBLE) {
                             viewModel.setEditingProfile(null)
                             viewModel.setEditingSubscription(null)
+                        } else if (findViewById<View>(flare.client.app.R.id.layout_journal_container)?.visibility == View.VISIBLE) {
+                            val v = findViewById<View>(flare.client.app.R.id.layout_journal_container)
+                            val base = findViewById<View>(flare.client.app.R.id.layout_settings_base_container)
+                            if (v != null && base != null) {
+                                flare.client.app.util.AnimUtils.navigateBack(v, base)
+                                binding.bottomNav.show()
+                                logJob?.cancel()
+                            }
                         } else if (binding.layoutSettingsAdvancedContainer.root.visibility ==
                                         View.VISIBLE
                         ) {
-                            binding.layoutSettingsAdvancedContainer.root.visibility = View.GONE
-                            binding.layoutSettings.root.visibility = View.VISIBLE
+                            flare.client.app.util.AnimUtils.navigateBack(
+                                binding.layoutSettingsAdvancedContainer.root,
+                                binding.layoutSettings.root
+                            )
                         } else if (binding.layoutSettingsPingContainer.root.visibility == View.VISIBLE) {
-                            binding.layoutSettingsPingContainer.root.visibility = View.GONE
-                            binding.layoutSettings.root.visibility = View.VISIBLE
+                            flare.client.app.util.AnimUtils.navigateBack(
+                                binding.layoutSettingsPingContainer.root,
+                                binding.layoutSettings.root
+                            )
                         } else if (findViewById<View>(flare.client.app.R.id.layout_settings_subscriptions_container)
                                         ?.visibility == View.VISIBLE
                         ) {
-                            findViewById<View>(flare.client.app.R.id.layout_settings_subscriptions_container)
-                                    ?.visibility = View.GONE
-                            binding.layoutSettings.root.visibility = View.VISIBLE
+                            val v = findViewById<View>(flare.client.app.R.id.layout_settings_subscriptions_container)
+                            if (v != null) flare.client.app.util.AnimUtils.navigateBack(v, binding.layoutSettings.root)
                         } else if (findViewById<View>(flare.client.app.R.id.layout_settings_theme_container)
                                         ?.visibility == View.VISIBLE
                         ) {
-                            findViewById<View>(flare.client.app.R.id.layout_settings_theme_container)?.visibility =
-                                    View.GONE
-                            binding.layoutSettings.root.visibility = View.VISIBLE
+                            val v = findViewById<View>(flare.client.app.R.id.layout_settings_theme_container)
+                            if (v != null) flare.client.app.util.AnimUtils.navigateBack(v, binding.layoutSettings.root)
                         } else if (findViewById<View>(flare.client.app.R.id.layout_settings_base_container)
                                         ?.visibility == View.VISIBLE
                         ) {
-                            findViewById<View>(flare.client.app.R.id.layout_settings_base_container)
-                                    ?.visibility = View.GONE
-                            binding.layoutSettings.root.visibility = View.VISIBLE
+                            val v = findViewById<View>(flare.client.app.R.id.layout_settings_base_container)
+                            if (v != null) flare.client.app.util.AnimUtils.navigateBack(v, binding.layoutSettings.root)
+                        } else if (findViewById<View>(flare.client.app.R.id.layout_settings_language_container)
+                                        ?.visibility == View.VISIBLE
+                        ) {
+                            val v = findViewById<View>(flare.client.app.R.id.layout_settings_language_container)
+                            if (v != null) flare.client.app.util.AnimUtils.navigateBack(v, binding.layoutSettings.root)
                         } else if (binding.layoutCustomServersContainer.layoutSshConfig.visibility == View.VISIBLE ||
                                    binding.layoutCustomServersContainer.layoutProtocolSelection.visibility == View.VISIBLE ||
                                    binding.layoutCustomServersContainer.layoutSetupProgressContainer.visibility == View.VISIBLE ||
@@ -285,7 +331,7 @@ class MainActivity : AppCompatActivity() {
             themeChangedJustNow = false
             flare.client.app.ui.notification.AppNotificationManager.showNotification(
                 flare.client.app.ui.notification.NotificationType.SUCCESS,
-                "Тема приложения была изменена автоматически!",
+                getString(R.string.notif_theme_changed_auto),
                 3
             )
         }
@@ -314,15 +360,15 @@ class MainActivity : AppCompatActivity() {
                                 val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                                 val clip = android.content.ClipData.newPlainText("proxy_link", link)
                                 clipboard.setPrimaryClip(clip)
-                                showSnackbar("Ссылка скопирована")
+                                showSnackbar(getString(R.string.success_link_copied))
                                 
                                 val shareIntent = Intent(Intent.ACTION_SEND).apply {
                                     type = "text/plain"
                                     putExtra(Intent.EXTRA_TEXT, link)
                                 }
-                                startActivity(Intent.createChooser(shareIntent, "Поделиться ссылкой"))
+                                startActivity(Intent.createChooser(shareIntent, getString(R.string.btn_share_link)))
                             } else {
-                                showSnackbar("Не удалось сгенерировать ссылку")
+                                showSnackbar(getString(R.string.error_link_generation))
                             }
                         }
                 )
@@ -387,7 +433,7 @@ class MainActivity : AppCompatActivity() {
             val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
             val text = clipboard.primaryClip?.getItemAt(0)?.text?.toString()
             if (text.isNullOrBlank()) {
-                showSnackbar("Буфер обмена пуст")
+                showSnackbar(getString(R.string.error_clipboard_empty))
             } else {
                 viewModel.importFromClipboard(text)
             }
@@ -414,7 +460,7 @@ class MainActivity : AppCompatActivity() {
                     )
                     viewModel.setEditingProfile(null)
                 } else {
-                    showSnackbar("Название не может быть пустым")
+                    showSnackbar(getString(R.string.error_empty_name))
                 }
             }
         }
@@ -498,6 +544,7 @@ class MainActivity : AppCompatActivity() {
                         findViewById<View>(flare.client.app.R.id.layout_settings_subscriptions_container)?.visibility =
                                 View.GONE
                         findViewById<View>(flare.client.app.R.id.layout_settings_theme_container)?.visibility = View.GONE
+                        findViewById<View>(flare.client.app.R.id.layout_settings_language_container)?.visibility = View.GONE
                     }
                     1 -> {
                         if (oldView == null) {
@@ -511,6 +558,7 @@ class MainActivity : AppCompatActivity() {
                         findViewById<View>(flare.client.app.R.id.layout_settings_subscriptions_container)?.visibility =
                                 View.GONE
                         findViewById<View>(flare.client.app.R.id.layout_settings_theme_container)?.visibility = View.GONE
+                        findViewById<View>(flare.client.app.R.id.layout_settings_language_container)?.visibility = View.GONE
                     }
                     2 -> {
                         if (oldView == null) {
@@ -524,6 +572,7 @@ class MainActivity : AppCompatActivity() {
                         findViewById<View>(flare.client.app.R.id.layout_settings_subscriptions_container)?.visibility =
                                 View.GONE
                         findViewById<View>(flare.client.app.R.id.layout_settings_theme_container)?.visibility = View.GONE
+                        findViewById<View>(flare.client.app.R.id.layout_settings_language_container)?.visibility = View.GONE
 
                         if (selectedServerId != null) {
                             binding.bottomNav.shrinkToArrow()
@@ -551,7 +600,8 @@ class MainActivity : AppCompatActivity() {
                     binding.layoutSettingsPingContainer.root,
                     findViewById<View>(flare.client.app.R.id.layout_settings_base_container),
                     findViewById<View>(flare.client.app.R.id.layout_settings_subscriptions_container),
-                    findViewById<View>(flare.client.app.R.id.layout_settings_theme_container)
+                    findViewById<View>(flare.client.app.R.id.layout_settings_theme_container),
+                    findViewById<View>(flare.client.app.R.id.layout_settings_language_container)
                 )
                 settingsViews.firstOrNull { it?.visibility == View.VISIBLE }
             }
@@ -806,9 +856,9 @@ class MainActivity : AppCompatActivity() {
         }
 
         lifecycleScope.launch {
-            val config = setupManager.setupXray(host, sshPort, user, pass, vpnPort, sni)
-            if (config != null) {
-                finalizeServerCreation(profileName, config)
+            val uri = setupManager.setupXray(host, sshPort, user, pass, vpnPort, sni)
+            if (uri != null) {
+                finalizeServerCreation(profileName, uri)
             } else {
                 showWizardStep(WizardStep.SSH_CONFIG)
                 flare.client.app.ui.notification.AppNotificationManager.showNotification(
@@ -820,8 +870,8 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun finalizeServerCreation(profileName: String, config: String) {
-        viewModel.addPrivateServer(profileName, config)
+    private fun finalizeServerCreation(profileName: String, uri: String) {
+        viewModel.addPrivateServer(uri, profileName)
         showWizardStep(WizardStep.SUCCESS)
         val successAction = {
             showWizardStep(WizardStep.CARDS)
@@ -900,28 +950,44 @@ class MainActivity : AppCompatActivity() {
 
     private fun setupSettings() {
         binding.layoutSettings.btnSettingsBase.setOnClickListener {
-            binding.layoutSettings.root.visibility = View.GONE
-            findViewById<View>(flare.client.app.R.id.layout_settings_base_container)?.visibility = View.VISIBLE
+            val target = findViewById<View>(flare.client.app.R.id.layout_settings_base_container)
+            if (target != null) {
+                flare.client.app.util.AnimUtils.morphNavigate(it, binding.layoutSettings.root, target, binding.rootLayout)
+            }
         }
         binding.layoutSettings.btnSettingsAdvanced.setOnClickListener {
-            binding.layoutSettings.root.visibility = View.GONE
-            binding.layoutSettingsAdvancedContainer.root.visibility = View.VISIBLE
+            flare.client.app.util.AnimUtils.morphNavigate(
+                it,
+                binding.layoutSettings.root,
+                binding.layoutSettingsAdvancedContainer.root,
+                binding.rootLayout
+            )
         }
         binding.layoutSettings.btnSettingsTheme.setOnClickListener {
-            binding.layoutSettings.root.visibility = View.GONE
-            findViewById<View>(flare.client.app.R.id.layout_settings_theme_container)?.visibility = View.VISIBLE
+            val target = findViewById<View>(flare.client.app.R.id.layout_settings_theme_container)
+            if (target != null) {
+                flare.client.app.util.AnimUtils.morphNavigate(it, binding.layoutSettings.root, target, binding.rootLayout)
+            }
         }
         binding.layoutSettings.btnSettingsLanguage.setOnClickListener {
-            showSnackbar("Смена языка (в разработке)")
+            val target = findViewById<View>(flare.client.app.R.id.layout_settings_language_container)
+            if (target != null) {
+                flare.client.app.util.AnimUtils.morphNavigate(it, binding.layoutSettings.root, target, binding.rootLayout)
+            }
         }
         binding.layoutSettings.btnSettingsPing.setOnClickListener {
-            binding.layoutSettings.root.visibility = View.GONE
-            binding.layoutSettingsPingContainer.root.visibility = View.VISIBLE
+            flare.client.app.util.AnimUtils.morphNavigate(
+                it,
+                binding.layoutSettings.root,
+                binding.layoutSettingsPingContainer.root,
+                binding.rootLayout
+            )
         }
         binding.layoutSettings.btnSettingsSubscriptions.setOnClickListener {
-            binding.layoutSettings.root.visibility = View.GONE
-            findViewById<View>(flare.client.app.R.id.layout_settings_subscriptions_container)
-                    ?.visibility = View.VISIBLE
+            val target = findViewById<View>(flare.client.app.R.id.layout_settings_subscriptions_container)
+            if (target != null) {
+                flare.client.app.util.AnimUtils.morphNavigate(it, binding.layoutSettings.root, target, binding.rootLayout)
+            }
         }
 
         isInitializingSettings = true
@@ -930,7 +996,77 @@ class MainActivity : AppCompatActivity() {
         setupBaseSettings()
         setupSubscriptionsSettings()
         setupThemeSettings()
+        setupLanguageSettings()
         isInitializingSettings = false
+    }
+
+    private fun setupLanguageSettings() {
+        val langView = findViewById<View>(flare.client.app.R.id.layout_settings_language_container) ?: return
+        langView.findViewById<View>(flare.client.app.R.id.btn_language_back)?.setOnClickListener {
+            flare.client.app.util.AnimUtils.navigateBack(langView, binding.layoutSettings.root)
+        }
+
+        val tvValue = langView.findViewById<android.widget.TextView>(flare.client.app.R.id.tv_language_value)
+        
+        fun updateLabel() {
+            val current = settings.appLanguage
+            tvValue?.text = when (current) {
+                "en" -> "English"
+                "ru" -> "Русский"
+                else -> getString(R.string.language_auto)
+            }
+        }
+        updateLabel()
+
+        langView.findViewById<View>(flare.client.app.R.id.btn_app_language_selector)?.setOnClickListener { view ->
+            val options = listOf(
+                getString(flare.client.app.R.string.language_auto),
+                "English",
+                "Русский"
+            )
+            showPopupMenu(view, options) { selected ->
+                val langCode = when (selected) {
+                    "English" -> "en"
+                    "Русский" -> "ru"
+                    else -> "auto"
+                }
+                
+                val currentEffectiveLang = if (resources.configuration.locales.isEmpty) "en" else resources.configuration.locales[0].language
+                val isSettingSame = settings.appLanguage == langCode
+                val isEffectivelySame = (langCode == "auto" && isSettingSame) || (langCode != "auto" && langCode == currentEffectiveLang)
+
+                if (!isSettingSame) {
+                    settings.appLanguage = langCode
+                    updateLabel()
+
+                    if (!isEffectivelySame) {
+                        val appLocales: LocaleListCompat = when (langCode) {
+                            "en" -> LocaleListCompat.forLanguageTags("en")
+                            "ru" -> LocaleListCompat.forLanguageTags("ru")
+                            else -> LocaleListCompat.getEmptyLocaleList()
+                        }
+
+                        val locale = when (langCode) {
+                            "en" -> java.util.Locale("en")
+                            "ru" -> java.util.Locale("ru")
+                            else -> java.util.Locale.getDefault()
+                        }
+                        val config = android.content.res.Configuration(resources.configuration)
+                        config.setLocale(locale)
+                        val localizedContext = createConfigurationContext(config)
+
+                        flare.client.app.ui.notification.AppNotificationManager.showNotification(
+                            flare.client.app.ui.notification.NotificationType.WARNING,
+                            localizedContext.getString(R.string.language_restart_hint),
+                            10,
+                            localizedContext.getString(R.string.btn_apply)
+                        ) {
+                            AppCompatDelegate.setApplicationLocales(appLocales)
+                        }
+                    }
+                }
+            }
+        }
     }
 
     private fun setupSubscriptionsSettings() {
@@ -938,8 +1074,7 @@ class MainActivity : AppCompatActivity() {
                 findViewById<View>(flare.client.app.R.id.layout_settings_subscriptions_container)
                         ?: return
         subView.findViewById<View>(flare.client.app.R.id.btn_subscriptions_back)?.setOnClickListener {
-            subView.visibility = View.GONE
-            binding.layoutSettings.root.visibility = View.VISIBLE
+            flare.client.app.util.AnimUtils.navigateBack(subView, binding.layoutSettings.root)
         }
 
         val swAutoUpdate = subView.findViewById<androidx.appcompat.widget.SwitchCompat>(flare.client.app.R.id.sw_auto_update)
@@ -997,8 +1132,7 @@ class MainActivity : AppCompatActivity() {
     private fun setupBaseSettings() {
         val baseInclude = findViewById<View>(flare.client.app.R.id.layout_settings_base_container)
         baseInclude?.findViewById<View>(flare.client.app.R.id.btn_base_back)?.setOnClickListener {
-            baseInclude.visibility = View.GONE
-            binding.layoutSettings.root.visibility = View.VISIBLE
+            flare.client.app.util.AnimUtils.navigateBack(baseInclude, binding.layoutSettings.root)
         }
 
         val swSplit = baseInclude?.findViewById<androidx.appcompat.widget.SwitchCompat>(flare.client.app.R.id.sw_split_tunneling)
@@ -1015,8 +1149,10 @@ class MainActivity : AppCompatActivity() {
             )
 
             swSplit.setOnCheckedChangeListener { _, isChecked ->
-                settings.isSplitTunnelingEnabled = isChecked
-                showSettingsNotification()
+                if (settings.isSplitTunnelingEnabled != isChecked) {
+                    settings.isSplitTunnelingEnabled = isChecked
+                    showSettingsNotification()
+                }
                 android.transition.TransitionManager.beginDelayedTransition(
                         blockSplit,
                         android.transition.AutoTransition().setDuration(200)
@@ -1075,6 +1211,67 @@ class MainActivity : AppCompatActivity() {
 
             swBestProfileNotif.setOnCheckedChangeListener { _, isChecked ->
                 settings.isBestProfileNotificationEnabled = isChecked
+            }
+        }
+        
+        val swHwid = baseInclude?.findViewById<androidx.appcompat.widget.SwitchCompat>(flare.client.app.R.id.sw_hwid)
+        val btnToggleHwid = baseInclude?.findViewById<View>(flare.client.app.R.id.btn_toggle_hwid)
+        if (swHwid != null && btnToggleHwid != null) {
+            swHwid.isChecked = settings.isHwidEnabled
+            btnToggleHwid.setOnClickListener {
+                swHwid.toggle()
+            }
+            swHwid.setOnCheckedChangeListener { _, isChecked ->
+                settings.isHwidEnabled = isChecked
+            }
+        }
+
+        val swCoreLog = baseInclude?.findViewById<androidx.appcompat.widget.SwitchCompat>(flare.client.app.R.id.sw_core_log)
+        val btnToggleCoreLog = baseInclude?.findViewById<View>(flare.client.app.R.id.btn_toggle_core_log)
+        val layoutCoreLogSub = baseInclude?.findViewById<View>(flare.client.app.R.id.layout_core_log_sub)
+        val btnCoreLogLevel = baseInclude?.findViewById<View>(flare.client.app.R.id.btn_core_log_level)
+        val tvCoreLogLevelValue = baseInclude?.findViewById<android.widget.TextView>(flare.client.app.R.id.tv_core_log_level_value)
+        val blockLogging = baseInclude?.findViewById<android.view.ViewGroup>(flare.client.app.R.id.block_logging)
+
+        if (swCoreLog != null && btnToggleCoreLog != null && layoutCoreLogSub != null && blockLogging != null) {
+            swCoreLog.isChecked = settings.isCoreLogEnabled
+            layoutCoreLogSub.visibility = if (settings.isCoreLogEnabled) View.VISIBLE else View.GONE
+            btnToggleCoreLog.setBackgroundResource(
+                if (settings.isCoreLogEnabled) flare.client.app.R.drawable.bg_grouped_top
+                else flare.client.app.R.drawable.bg_grouped_all
+            )
+            tvCoreLogLevelValue?.text = settings.coreLogLevel
+
+            btnToggleCoreLog.setOnClickListener {
+                swCoreLog.toggle()
+            }
+
+            swCoreLog.setOnCheckedChangeListener { _, isChecked ->
+                settings.isCoreLogEnabled = isChecked
+                android.transition.TransitionManager.beginDelayedTransition(
+                    blockLogging,
+                    android.transition.AutoTransition().setDuration(200)
+                )
+                layoutCoreLogSub.visibility = if (isChecked) View.VISIBLE else View.GONE
+                btnToggleCoreLog.setBackgroundResource(
+                    if (isChecked) flare.client.app.R.drawable.bg_grouped_top
+                    else flare.client.app.R.drawable.bg_grouped_all
+                )
+            }
+
+            btnCoreLogLevel?.setOnClickListener { view ->
+                val levels = listOf("trace", "debug", "info", "warn", "error", "fatal", "panic")
+                val items = levels.mapIndexed { index, level ->
+                    flare.client.app.util.GlassUtils.MenuItem(index, level) {
+                        settings.coreLogLevel = level
+                        tvCoreLogLevelValue?.text = level
+                    }
+                }
+                flare.client.app.util.GlassUtils.showGlassMenu(view, items)
+            }
+
+            baseInclude.findViewById<View>(flare.client.app.R.id.btn_view_journal)?.setOnClickListener {
+                setupJournal()
             }
         }
 
@@ -1177,7 +1374,7 @@ class MainActivity : AppCompatActivity() {
                         settings.bestProfileInterval = "10"
                         flare.client.app.ui.notification.AppNotificationManager.showNotification(
                             flare.client.app.ui.notification.NotificationType.WARNING,
-                            "Минимальный интервал — 10 секунд",
+                            getString(R.string.settings_ping_interval_min_warning),
                             2
                         )
                     }
@@ -1215,7 +1412,7 @@ class MainActivity : AppCompatActivity() {
                     if (settings.isUpdateCheckEnabled) flare.client.app.R.drawable.bg_grouped_top
                     else flare.client.app.R.drawable.bg_grouped_all
                 )
-                tvFreqValue?.text = settings.updateCheckFrequency
+                tvFreqValue?.text = getUpdateFreqDisplay(settings.updateCheckFrequency)
 
                 swUpdateCheck.setOnCheckedChangeListener { _, isChecked ->
                     settings.isUpdateCheckEnabled = isChecked
@@ -1237,9 +1434,11 @@ class MainActivity : AppCompatActivity() {
                         getString(R.string.update_freq_weekly),
                         getString(R.string.update_freq_monthly)
                     )
+                    val keys = listOf("daily", "weekly", "monthly")
                     val items = options.mapIndexed { index, text ->
                         flare.client.app.util.GlassUtils.MenuItem(index, text) {
-                            settings.updateCheckFrequency = text
+                            val key = keys.getOrElse(index) { "daily" }
+                            settings.updateCheckFrequency = key
                             tvFreqValue?.text = text
                             viewModel.startUpdateCheckJob()
                         }
@@ -1261,40 +1460,27 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        fun pluralApps(n: Int): String {
-            val mod10 = n % 10
-            val mod100 = n % 100
-            return when {
-                mod100 in 11..19 -> "приложений"
-                mod10 == 1       -> "приложение"
-                mod10 in 2..4    -> "приложения"
-                else             -> "приложений"
-            }
-        }
-
-        fun pluralSites(n: Int): String {
-            val mod10 = n % 10
-            val mod100 = n % 100
-            return when {
-                mod100 in 11..19 -> "сайтов"
-                mod10 == 1       -> "сайт"
-                mod10 in 2..4    -> "сайта"
-                else             -> "сайтов"
-            }
-        }
-
         tvDesc?.text = buildString {
-            append("Выбрано ")
+            append(getString(R.string.label_selected))
+            append(" ")
             if (appsCount > 0) {
-                append("$appsCount ${pluralApps(appsCount)}")
+                append("$appsCount ${resources.getQuantityString(R.plurals.plural_apps, appsCount)}")
             }
             if (appsCount > 0 && sitesCount > 0) {
-                append(" и ")
+                append(getString(R.string.label_and))
             }
             if (sitesCount > 0) {
-                append("$sitesCount ${pluralSites(sitesCount)}")
+                append("$sitesCount ${resources.getQuantityString(R.plurals.plural_sites, sitesCount)}")
             }
         }
+    }
+
+    private fun pluralApps(n: Int): String {
+        return resources.getQuantityString(R.plurals.plural_apps, n)
+    }
+
+    private fun pluralSites(n: Int): String {
+        return resources.getQuantityString(R.plurals.plural_sites, n)
     }
 
     private fun showAppSelectionDialog(allApps: List<AppListItem>) {
@@ -1357,8 +1543,6 @@ class MainActivity : AppCompatActivity() {
         }
 
         fun switchTab(toApps: Boolean, animateIndicator: Boolean = true) {
-            if (currentTabIsApps == toApps && !isDragging) return
-            
             val containerWidth = tabContainer?.width?.toFloat() ?: 0f
             if (containerWidth > 0f) {
                 val halfW = containerWidth / 2f
@@ -1374,6 +1558,8 @@ class MainActivity : AppCompatActivity() {
                     tabIndicator?.invalidate()
                 }
             }
+            
+            if (currentTabIsApps == toApps && !isDragging) return
             
             updateTabVisuals(toApps)
             tvDialogTitle?.text = getString(if (toApps) R.string.dialog_apps_title else R.string.dialog_domens_title)
@@ -1490,7 +1676,7 @@ class MainActivity : AppCompatActivity() {
         updateModeUI()
 
         if (allApps.size <= 1) {
-            Snackbar.make(binding.root, "Список пуст. Проверьте разрешение на список приложений в настройках.", Snackbar.LENGTH_LONG)
+            Snackbar.make(binding.root, getString(R.string.error_apps_list_empty), Snackbar.LENGTH_LONG)
                 .setAction("Настройки") {
                     val i = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
                         data = Uri.fromParts("package", packageName, null)
@@ -1522,13 +1708,20 @@ class MainActivity : AppCompatActivity() {
 
         dialogBinding.root.findViewById<View>(R.id.btn_cancel_apps)?.setOnClickListener { dialog.dismiss() }
         dialogBinding.root.findViewById<View>(R.id.btn_save_apps)?.setOnClickListener {
-            settings.splitTunnelingApps = selectedPackages
             val finalSites = etSites?.text?.toString()?.split("\n")?.map { it.trim() }?.filter { it.isNotEmpty() }?.toSet() ?: emptySet()
+            
+            val hasChanged = settings.splitTunnelingApps != selectedPackages ||
+                            settings.splitTunnelingSites != finalSites ||
+                            settings.splitTunnelingModeApps != tempModeApps ||
+                            settings.splitTunnelingModeSites != tempModeSites
+
+            settings.splitTunnelingApps = selectedPackages
             settings.splitTunnelingSites = finalSites
             settings.splitTunnelingModeApps = tempModeApps
             settings.splitTunnelingModeSites = tempModeSites
+            
             updateSplitTunnelingDesc()
-            showSettingsNotification()
+            if (hasChanged) showSettingsNotification()
             dialog.dismiss()
         }
 
@@ -1583,8 +1776,7 @@ class MainActivity : AppCompatActivity() {
         val adv = binding.layoutSettingsAdvancedContainer
 
         adv.btnAdvancedBack.setOnClickListener {
-            adv.root.visibility = View.GONE
-            binding.layoutSettings.root.visibility = View.VISIBLE
+            flare.client.app.util.AnimUtils.navigateBack(adv.root, binding.layoutSettings.root)
         }
 
         adv.swFragmentation.isChecked = settings.isFragmentationEnabled
@@ -1613,8 +1805,10 @@ class MainActivity : AppCompatActivity() {
         swFakeIp?.isChecked = settings.isFakeIpEnabled
 
         swFakeIp?.setOnCheckedChangeListener { _, isChecked ->
-            settings.isFakeIpEnabled = isChecked
-            showSettingsNotification()
+            if (settings.isFakeIpEnabled != isChecked) {
+                settings.isFakeIpEnabled = isChecked
+                showSettingsNotification()
+            }
         }
 
         val btnToggleFakeIp = adv.root.findViewById<android.view.View>(flare.client.app.R.id.btn_toggle_fake_ip)
@@ -1623,8 +1817,10 @@ class MainActivity : AppCompatActivity() {
         }
 
         adv.swFragmentation.setOnCheckedChangeListener { _, isChecked ->
-            settings.isFragmentationEnabled = isChecked
-            showSettingsNotification()
+            if (settings.isFragmentationEnabled != isChecked) {
+                settings.isFragmentationEnabled = isChecked
+                showSettingsNotification()
+            }
             android.transition.TransitionManager.beginDelayedTransition(
                     adv.blockFragmentation,
                     android.transition.AutoTransition().setDuration(200)
@@ -1638,18 +1834,22 @@ class MainActivity : AppCompatActivity() {
 
         adv.btnPacketType.setOnClickListener { view ->
             showPopupMenu(view, listOf("tlshello", "1-3")) { selected ->
-                adv.tvPacketTypeValue.text = selected
-                settings.packetType = selected
-                showSettingsNotification()
+                if (settings.packetType != selected) {
+                    adv.tvPacketTypeValue.text = selected
+                    settings.packetType = selected
+                    showSettingsNotification()
+                }
             }
         }
 
         adv.btnStackType.setOnClickListener { view ->
             showPopupMenu(view, listOf("system", "mixed", "gvisor")) { selected ->
-                adv.tvStackTypeValue.text = this@MainActivity.getString(R.string.settings_label_stack, selected)
-                settings.tunStack = selected
-                updateStackDesc(selected)
-                showSettingsNotification()
+                if (settings.tunStack != selected) {
+                    adv.tvStackTypeValue.text = this@MainActivity.getString(R.string.settings_label_stack, selected)
+                    settings.tunStack = selected
+                    updateStackDesc(selected)
+                    showSettingsNotification()
+                }
             }
         }
 
@@ -1657,8 +1857,11 @@ class MainActivity : AppCompatActivity() {
                 object : android.text.TextWatcher {
                     override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
                     override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                        settings.fragmentInterval = s.toString()
-                        showSettingsNotification()
+                        val newValue = s.toString()
+                        if (settings.fragmentInterval != newValue) {
+                            settings.fragmentInterval = newValue
+                            showSettingsNotification()
+                        }
                     }
                     override fun afterTextChanged(s: android.text.Editable?) {}
                 }
@@ -1668,8 +1871,11 @@ class MainActivity : AppCompatActivity() {
                 object : android.text.TextWatcher {
                     override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
                     override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                        settings.mtu = s.toString()
-                        showSettingsNotification()
+                        val newValue = s.toString()
+                        if (settings.mtu != newValue) {
+                            settings.mtu = newValue
+                            showSettingsNotification()
+                        }
                     }
                     override fun afterTextChanged(s: android.text.Editable?) {}
                 }
@@ -1679,8 +1885,11 @@ class MainActivity : AppCompatActivity() {
                 object : android.text.TextWatcher {
                     override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
                     override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                        settings.remoteDnsUrl = s.toString().trim()
-                        showSettingsNotification()
+                        val newValue = s.toString().trim()
+                        if (settings.remoteDnsUrl != newValue) {
+                            settings.remoteDnsUrl = newValue
+                            showSettingsNotification()
+                        }
                     }
                     override fun afterTextChanged(s: android.text.Editable?) {}
                 }
@@ -1693,13 +1902,15 @@ class MainActivity : AppCompatActivity() {
                 else flare.client.app.R.drawable.bg_grouped_all
         )
         adv.tvMuxProtocolValue.text = settings.muxProtocol
-        adv.tvMuxPaddingValue.text = if (settings.muxPadding) "Да" else "Нет"
+        adv.tvMuxPaddingValue.text = if (settings.muxPadding) getString(R.string.option_yes) else getString(R.string.option_no)
 
         adv.etMuxMaxStreams.setText(settings.muxMaxStreams)
 
         adv.swMux.setOnCheckedChangeListener { _, isChecked ->
-            settings.isMuxEnabled = isChecked
-            showSettingsNotification()
+            if (settings.isMuxEnabled != isChecked) {
+                settings.isMuxEnabled = isChecked
+                showSettingsNotification()
+            }
             android.transition.TransitionManager.beginDelayedTransition(
                     adv.blockMux,
                     android.transition.AutoTransition().setDuration(200)
@@ -1713,9 +1924,11 @@ class MainActivity : AppCompatActivity() {
 
         adv.btnMuxProtocol.setOnClickListener { view ->
             showPopupMenu(view, listOf("smux", "h2mux")) { selected ->
-                adv.tvMuxProtocolValue.text = selected
-                settings.muxProtocol = selected
-                showSettingsNotification()
+                if (settings.muxProtocol != selected) {
+                    adv.tvMuxProtocolValue.text = selected
+                    settings.muxProtocol = selected
+                    showSettingsNotification()
+                }
             }
         }
 
@@ -1723,8 +1936,11 @@ class MainActivity : AppCompatActivity() {
                 object : android.text.TextWatcher {
                     override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
                     override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                        settings.muxMaxStreams = s.toString()
-                        showSettingsNotification()
+                        val newValue = s.toString()
+                        if (settings.muxMaxStreams != newValue) {
+                            settings.muxMaxStreams = newValue
+                            showSettingsNotification()
+                        }
                     }
                     override fun afterTextChanged(s: android.text.Editable?) {
                         val v = s?.toString()?.toIntOrNull() ?: return
@@ -1740,10 +1956,14 @@ class MainActivity : AppCompatActivity() {
         )
 
         adv.btnMuxPadding.setOnClickListener { view ->
-            showPopupMenu(view, listOf("Да", "Нет")) { selected ->
-                adv.tvMuxPaddingValue.text = selected
-                settings.muxPadding = (selected == "Да")
-                showSettingsNotification()
+            val options = listOf(getString(R.string.option_yes), getString(R.string.option_no))
+            showPopupMenu(view, options) { selected ->
+                val newValue = (selected == getString(R.string.option_yes))
+                if (settings.muxPadding != newValue) {
+                    adv.tvMuxPaddingValue.text = selected
+                    settings.muxPadding = newValue
+                    showSettingsNotification()
+                }
             }
         }
     }
@@ -1752,13 +1972,12 @@ class MainActivity : AppCompatActivity() {
         val png = binding.layoutSettingsPingContainer
 
         png.btnPingBack.setOnClickListener {
-            png.root.visibility = View.GONE
-            binding.layoutSettings.root.visibility = View.VISIBLE
+            flare.client.app.util.AnimUtils.navigateBack(png.root, binding.layoutSettings.root)
         }
 
         updatePingTypeUI(settings.pingType)
         png.etTestUrl.setText(settings.pingTestUrl)
-        png.tvPingStyleValue.text = settings.pingStyle
+        png.tvPingStyleValue.text = getPingStyleDisplay(settings.pingStyle)
 
         png.btnPingTypeGet.setOnClickListener {
             settings.pingType = "via proxy GET"
@@ -1788,10 +2007,20 @@ class MainActivity : AppCompatActivity() {
         )
 
         png.btnPingStyle.setOnClickListener { view ->
-            showPopupMenu(view, listOf("Время", "Значок", "Время и значок")) { selected ->
-                png.tvPingStyleValue.text = selected
-                settings.pingStyle = selected
+            val options = listOf(
+                getString(R.string.settings_ping_style_time),
+                getString(R.string.settings_ping_style_icon),
+                getString(R.string.settings_ping_style_both)
+            )
+            val keys = listOf("time", "icon", "both")
+            val items = options.mapIndexed { index, text ->
+                flare.client.app.util.GlassUtils.MenuItem(index, text) {
+                    val key = keys.getOrElse(index) { "time" }
+                    png.tvPingStyleValue.text = text
+                    settings.pingStyle = key
+                }
             }
+            flare.client.app.util.GlassUtils.showGlassMenu(view, items)
         }
     }
 
@@ -1845,8 +2074,7 @@ class MainActivity : AppCompatActivity() {
         val themeView = findViewById<View>(flare.client.app.R.id.layout_settings_theme_container) ?: return
 
         themeView.findViewById<View>(flare.client.app.R.id.btn_theme_back).setOnClickListener {
-            themeView.visibility = View.GONE
-            binding.layoutSettings.root.visibility = View.VISIBLE
+            flare.client.app.util.AnimUtils.navigateBack(themeView, binding.layoutSettings.root)
         }
 
         updateThemeValueUI()
@@ -1863,10 +2091,27 @@ class MainActivity : AppCompatActivity() {
                     getString(flare.client.app.R.string.theme_night) -> 2
                     else -> 0
                 }
-                if (newMode != settings.themeMode) {
+                
+                val currentIsNight = (resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES
+                val targetIsNight = when (newMode) {
+                    1 -> false
+                    2 -> true
+                    else -> (resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES
+                }
+                
+                val isSettingSame = newMode == settings.themeMode
+                val isEffectivelySame = (newMode == 0 && isSettingSame) || (newMode != 0 && currentIsNight == targetIsNight)
+
+                if (!isSettingSame) {
                     settings.themeMode = newMode
-                    settings.pendingNavScreen = "theme"
-                    applyThemeWithAnimation(view)
+                    updateThemeValueUI()
+
+                    if (!isEffectivelySame) {
+                        settings.pendingNavScreen = "theme"
+                        applyThemeWithAnimation(view)
+                    } else {
+                        applyTheme()
+                    }
                 }
             }
         }
@@ -2163,6 +2408,7 @@ class MainActivity : AppCompatActivity() {
         val screen = settings.pendingNavScreen
         if (screen.isEmpty()) return
         settings.pendingNavScreen = ""
+        themeChangedJustNow = false
 
         binding.bottomNav.selectTab(0, false)
 
@@ -2183,6 +2429,9 @@ class MainActivity : AppCompatActivity() {
                     "theme" -> {
                         findViewById<View>(flare.client.app.R.id.layout_settings_theme_container)?.visibility = View.VISIBLE
                     }
+                    "language" -> {
+                        findViewById<View>(flare.client.app.R.id.layout_settings_language_container)?.visibility = View.VISIBLE
+                    }
                     "advanced" -> {
                         binding.layoutSettingsAdvancedContainer.root.visibility = View.VISIBLE
                     }
@@ -2200,9 +2449,15 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
 
+                val notifMsg = if (screen == "language") {
+                    getString(R.string.notif_language_changed_auto)
+                } else {
+                    getString(R.string.notif_theme_changed)
+                }
+
                 flare.client.app.ui.notification.AppNotificationManager.showNotification(
                     flare.client.app.ui.notification.NotificationType.SUCCESS,
-                    "Тема приложения была изменена!",
+                    notifMsg,
                     3
                 )
                 themeChangedJustNow = false
@@ -2365,23 +2620,30 @@ class MainActivity : AppCompatActivity() {
         )
     }
 
-    private var notificationAnimator: android.animation.AnimatorSet? = null
+    private data class NotificationItem(
+        val data: flare.client.app.ui.notification.NotificationData,
+        val view: View,
+        var animator: android.animation.AnimatorSet? = null
+    )
 
-    private fun observeNotifications() {
-        lifecycleScope.launch {
-            flare.client.app.ui.notification.AppNotificationManager.notifications.collect { data ->
-                if (!isFinishing && !isDestroyed) {
-                    showInAppNotification(data)
-                }
-            }
-        }
-    }
+    private val activeNotifications = mutableListOf<NotificationItem>()
+    private var isNotificationsExpanded = false
+    private var collapseJob: kotlinx.coroutines.Job? = null
 
     private fun showInAppNotification(data: flare.client.app.ui.notification.NotificationData) {
-        val container = binding.root.findViewById<View>(flare.client.app.R.id.notification_include) ?: return
-        val tvText = container.findViewById<android.widget.TextView>(flare.client.app.R.id.tv_notification_text)
-        val ivIcon = container.findViewById<android.widget.ImageView>(flare.client.app.R.id.iv_notification_icon)
-        val vProgress = container.findViewById<View>(flare.client.app.R.id.v_notification_progress)
+        val container = binding.root.findViewById<ViewGroup>(flare.client.app.R.id.notification_container) ?: return
+
+        
+        if (activeNotifications.size >= 3) {
+            val oldest = activeNotifications.removeAt(0)
+            removeInAppNotification(oldest, true)
+        }
+
+        val notifyView = layoutInflater.inflate(flare.client.app.R.layout.layout_notification, container, false)
+        val tvText = notifyView.findViewById<android.widget.TextView>(flare.client.app.R.id.tv_notification_text)
+        val ivIcon = notifyView.findViewById<android.widget.ImageView>(flare.client.app.R.id.iv_notification_icon)
+        val vProgress = notifyView.findViewById<View>(flare.client.app.R.id.v_notification_progress)
+        val btnAction = notifyView.findViewById<android.widget.TextView>(flare.client.app.R.id.btn_notification_action)
 
         tvText.text = data.text
         val iconRes = when (data.type) {
@@ -2391,28 +2653,138 @@ class MainActivity : AppCompatActivity() {
         }
         ivIcon.setImageResource(iconRes)
 
-        notificationAnimator?.cancel()
-        notificationAnimator = android.animation.AnimatorSet()
+        if (data.actionText != null) {
+            btnAction.visibility = View.VISIBLE
+            btnAction.text = data.actionText
+            btnAction.backgroundTintList = android.content.res.ColorStateList.valueOf(runtimeAccentColor)
+            btnAction.setOnClickListener {
+                data.onAction?.invoke()
+                val item = activeNotifications.find { it.view == notifyView }
+                if (item != null) {
+                    activeNotifications.remove(item)
+                    removeInAppNotification(item, false)
+                }
+            }
+        } else {
+            btnAction.visibility = View.GONE
+        }
 
-        container.visibility = View.VISIBLE
-        container.translationY = -500f
-        vProgress.scaleX = 1f
-        vProgress.pivotX = 0f
+        notifyView.setOnClickListener {
+            if (!isNotificationsExpanded && activeNotifications.size > 1) {
+                isNotificationsExpanded = true
+                updateNotificationsStack(true)
+                resetCollapseTimer()
+            }
+        }
 
-        val slideIn = android.animation.ObjectAnimator.ofFloat(container, View.TRANSLATION_Y, 0f)
-        slideIn.duration = 400
-        slideIn.interpolator = android.view.animation.OvershootInterpolator(1.2f)
+        val item = NotificationItem(data, notifyView)
+        activeNotifications.add(item)
+        
+        val density = resources.displayMetrics.density
+        notifyView.alpha = 0f
+        notifyView.translationY = -120f * density
+        
+        container.addView(notifyView)
 
+        
         val progressAnim = android.animation.ObjectAnimator.ofFloat(vProgress, View.SCALE_X, 1f, 0f)
         progressAnim.duration = data.durationSec * 1000L
         progressAnim.interpolator = android.view.animation.LinearInterpolator()
+        
+        val animator = android.animation.AnimatorSet()
+        animator.play(progressAnim)
+        animator.addListener(object : android.animation.AnimatorListenerAdapter() {
+            override fun onAnimationEnd(animation: android.animation.Animator) {
+                if (activeNotifications.contains(item)) {
+                    activeNotifications.remove(item)
+                    removeInAppNotification(item, false)
+                }
+            }
+        })
+        item.animator = animator
+        animator.start()
 
-        val slideOut = android.animation.ObjectAnimator.ofFloat(container, View.TRANSLATION_Y, -500f)
-        slideOut.duration = 300
-        slideOut.interpolator = android.view.animation.AccelerateInterpolator()
+        updateNotificationsStack(isNotificationsExpanded)
+        resetCollapseTimer()
+    }
 
-        notificationAnimator?.playSequentially(slideIn, progressAnim, slideOut)
-        notificationAnimator?.start()
+    private fun removeInAppNotification(item: NotificationItem, immediate: Boolean) {
+        val container = binding.root.findViewById<ViewGroup>(flare.client.app.R.id.notification_container) ?: return
+        item.animator?.cancel()
+        
+        if (immediate) {
+            container.removeView(item.view)
+            updateNotificationsStack(isNotificationsExpanded)
+        } else {
+            item.view.animate()
+                .alpha(0f)
+                .translationY(-100f)
+                .setDuration(300)
+                .withEndAction {
+                    container.removeView(item.view)
+                    updateNotificationsStack(isNotificationsExpanded)
+                }
+                .start()
+        }
+    }
+
+    private fun updateNotificationsStack(expanded: Boolean) {
+        val density = resources.displayMetrics.density
+        
+        val count = activeNotifications.size
+        activeNotifications.forEachIndexed { index, item ->
+            val posFromTop = count - 1 - index 
+            
+            val targetY: Float
+            val targetScale: Float
+            val targetAlpha: Float
+            val targetZ: Float
+
+            if (expanded) {
+                targetY = posFromTop * (72 * density) 
+                targetScale = 1.0f
+                targetAlpha = 1.0f
+                targetZ = 10f + (count - posFromTop).toFloat()
+            } else {
+                
+                targetY = posFromTop * (10 * density) 
+                targetScale = 1.0f - (posFromTop * 0.05f)
+                targetAlpha = 1.0f - (posFromTop * 0.2f)
+                targetZ = 10f + (count - posFromTop).toFloat()
+            }
+
+            item.view.animate()
+                .translationY(targetY)
+                .scaleX(targetScale)
+                .scaleY(targetScale)
+                .alpha(targetAlpha)
+                .setDuration(400)
+                .setInterpolator(android.view.animation.OvershootInterpolator(1.0f))
+                .start()
+            
+            item.view.z = targetZ
+        }
+    }
+
+    private fun resetCollapseTimer() {
+        collapseJob?.cancel()
+        collapseJob = lifecycleScope.launch {
+            kotlinx.coroutines.delay(3000)
+            if (isNotificationsExpanded) {
+                isNotificationsExpanded = false
+                updateNotificationsStack(false)
+            }
+        }
+    }
+
+    private fun observeNotifications() {
+        lifecycleScope.launch {
+            flare.client.app.ui.notification.AppNotificationManager.notifications.collect { data ->
+                if (!isFinishing && !isDestroyed) {
+                    showInAppNotification(data)
+                }
+            }
+        }
     }
 
     private fun observeViewModel() {
@@ -2842,8 +3214,21 @@ class MainActivity : AppCompatActivity() {
                     intent.action = Settings.ACTION_SETTINGS
                     batteryPermLauncher.launch(intent)
                 } catch (e3: Exception) {
-                    showSnackbar("Не удалось открыть настройки системы")
+                    showSnackbar(getString(R.string.error_open_settings))
                 }
+            }
+        }
+    }
+
+    override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {
+        super.onConfigurationChanged(newConfig)
+        if (settings.themeMode == 0) {
+            val newUiMode = newConfig.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK
+            if (lastUiMode != newUiMode) {
+                lastUiMode = newUiMode
+                themeChangedJustNow = true
+                lastThemeChangeTime = System.currentTimeMillis()
+                recreate()
             }
         }
     }
@@ -2869,5 +3254,86 @@ class MainActivity : AppCompatActivity() {
         const val COLOR_PINK_END    = 0xFFFF6FA1.toInt()
         const val COLOR_ORANGE      = 0xFFFF9F0A.toInt()
         const val COLOR_ORANGE_END  = 0xFFFFB340.toInt()
+    }
+    private fun getUpdateFreqDisplay(key: String): String {
+        return when (key) {
+            "daily", getString(R.string.update_freq_daily), "Daily" -> getString(R.string.update_freq_daily)
+            "weekly", getString(R.string.update_freq_weekly), "Weekly" -> getString(R.string.update_freq_weekly)
+            "monthly", getString(R.string.update_freq_monthly), "Monthly" -> getString(R.string.update_freq_monthly)
+            else -> key
+        }
+    }
+
+    private fun getPingStyleDisplay(key: String): String {
+        return when (key) {
+            "time", getString(R.string.settings_ping_style_time), "Time" -> getString(R.string.settings_ping_style_time)
+            "icon", getString(R.string.settings_ping_style_icon), "Icon" -> getString(R.string.settings_ping_style_icon)
+            "both", getString(R.string.settings_ping_style_both), "Time & Icon" -> getString(R.string.settings_ping_style_both)
+            else -> key
+        }
+    }
+    private fun setupJournal() {
+        val journalContainer = findViewById<View>(flare.client.app.R.id.layout_journal_container) ?: return
+        val baseSettings = findViewById<View>(flare.client.app.R.id.layout_settings_base_container) ?: return
+        val tvContent = journalContainer.findViewById<android.widget.TextView>(flare.client.app.R.id.tv_journal_content)
+        val btnBack = journalContainer.findViewById<View>(flare.client.app.R.id.btn_journal_back)
+        val btnClear = journalContainer.findViewById<View>(flare.client.app.R.id.btn_journal_clear)
+        val svJournal = journalContainer.findViewById<androidx.core.widget.NestedScrollView>(flare.client.app.R.id.sv_journal)
+
+        flare.client.app.util.AnimUtils.navigateForward(baseSettings, journalContainer)
+        binding.bottomNav.hide()
+
+        btnBack?.setOnClickListener {
+            flare.client.app.util.AnimUtils.navigateBack(journalContainer, baseSettings)
+            binding.bottomNav.show()
+            logJob?.cancel()
+        }
+
+        btnClear?.setOnClickListener {
+            try {
+                val logFile = java.io.File(filesDir, "sing-box.log")
+                if (logFile.exists()) {
+                    logFile.writeText("")
+                    tvContent?.text = ""
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+
+        logJob?.cancel()
+        logJob = lifecycleScope.launch(Dispatchers.IO) {
+            val logFile = java.io.File(filesDir, "sing-box.log")
+            var lastContent = ""
+            while (isActive) {
+                if (logFile.exists()) {
+                    val content = try {
+                        val lines = logFile.readLines()
+                        lines.joinToString("\n") { line ->
+                            flare.client.app.util.LogDecoder.decode(this@MainActivity, line)
+                        }
+                    } catch (e: Exception) {
+                        ""
+                    }
+                    
+                    if (content.isEmpty()) {
+                        withContext(Dispatchers.Main) {
+                            tvContent?.text = getString(flare.client.app.R.string.journal_waiting_logs)
+                            tvContent?.alpha = 0.5f
+                        }
+                    } else if (content != lastContent) {
+                        withContext(Dispatchers.Main) {
+                            tvContent?.text = content
+                            tvContent?.alpha = 1.0f
+                            svJournal?.post {
+                                svJournal.fullScroll(View.FOCUS_DOWN)
+                            }
+                        }
+                        lastContent = content
+                    }
+                }
+                delay(1500)
+            }
+        }
     }
 }

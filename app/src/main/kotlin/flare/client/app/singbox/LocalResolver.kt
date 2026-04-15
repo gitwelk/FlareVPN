@@ -7,11 +7,13 @@ import android.net.Network
 import android.os.Build
 import android.os.CancellationSignal
 import android.system.ErrnoException
+import android.system.OsConstants
 import android.util.Log
 import androidx.annotation.RequiresApi
 import io.nekohasekai.libbox.ExchangeContext
 import io.nekohasekai.libbox.LocalDNSTransport
 import kotlinx.coroutines.*
+import kotlinx.coroutines.asExecutor
 import java.net.InetAddress
 import java.net.UnknownHostException
 import java.util.concurrent.Executor
@@ -58,14 +60,14 @@ object LocalResolver : LocalDNSTransport {
     override fun exchange(ctx: ExchangeContext, message: ByteArray) {
         val network = getActiveNetwork()
         if (network == null) {
-            ctx.errnoCode(114514)
+            ctx.errnoCode(OsConstants.ENONET)
             return
         }
 
         val signal = CancellationSignal()
         ctx.onCancel { signal.cancel() }
 
-        val executor = Executor { runBlocking { withContext(Dispatchers.IO) { it.run() } } }
+        val executor = Dispatchers.IO.asExecutor()
 
         val callback = object : DnsResolver.Callback<ByteArray> {
             override fun onAnswer(answer: ByteArray, rcode: Int) {
@@ -82,7 +84,7 @@ object LocalResolver : LocalDNSTransport {
                     ctx.errnoCode(cause.errno)
                 } else {
                     Log.w(TAG, "DnsResolver.exchange error", error)
-                    ctx.errnoCode(114514)
+                ctx.errnoCode(OsConstants.EIO)
                 }
             }
         }
@@ -98,7 +100,7 @@ object LocalResolver : LocalDNSTransport {
             )
         } catch (e: Exception) {
             Log.e(TAG, "rawQuery failed", e)
-            ctx.errnoCode(114514)
+            ctx.errnoCode(OsConstants.EIO)
         }
     }
 
@@ -113,7 +115,7 @@ object LocalResolver : LocalDNSTransport {
             val signal = CancellationSignal()
             ctx.onCancel { signal.cancel() }
 
-            val executor = Executor { runBlocking { withContext(Dispatchers.IO) { it.run() } } }
+            val executor = Dispatchers.IO.asExecutor()
 
             val callback = object : DnsResolver.Callback<Collection<InetAddress>> {
                 override fun onAnswer(answer: Collection<InetAddress>, rcode: Int) {
@@ -130,7 +132,7 @@ object LocalResolver : LocalDNSTransport {
                         ctx.errnoCode(cause.errno)
                     } else {
                         Log.w(TAG, "DnsResolver.lookup error", error)
-                        ctx.errnoCode(114514)
+                    ctx.errnoCode(OsConstants.EIO)
                     }
                 }
             }
@@ -165,7 +167,7 @@ object LocalResolver : LocalDNSTransport {
                 ctx.errorCode(RCODE_NXDOMAIN)
             } catch (e: Exception) {
                 Log.e(TAG, "fallbackLookup failed", e)
-                ctx.errnoCode(114514)
+                ctx.errnoCode(OsConstants.EIO)
             }
         }
     }

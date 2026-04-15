@@ -11,5 +11,6 @@
         <item name="android:navigationBarColor">@color/bg_dark</item>
         <item name="android:windowLightStatusBar">false</item>
         <item name="android:fontFamily">@font/geologica_regular</item>
+        <item name="fontFamily">@font/geologica_regular</item>
     </style>
 </resources>

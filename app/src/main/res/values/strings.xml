@@ -18,6 +18,15 @@
     <string name="settings_btn_advanced">Расширенные</string>
     <string name="settings_item_theme">Тема и шрифт</string>
     <string name="settings_item_language">Язык</string>
+    <string name="notif_language_changed">Язык приложения изменен на %s</string>
+    <string name="settings_language_title">Язык</string>
+    <string name="settings_label_language">Язык приложения</string>
+    <string name="language_auto">Авто (система)</string>
+    <string name="language_en">English</string>
+    <string name="language_ru">Русский</string>
+    <string name="language_restart_hint">Почти готово! Нужно перезапустить приложение.</string>
+    <string name="label_servers">Сервера</string>
+    <string name="btn_apply">Применить</string>
 
     <string name="settings_header_app">Настройки приложения</string>
     <string name="settings_item_ping">Пинг</string>
@@ -60,7 +69,7 @@
     <string name="settings_ping_type_icmp">ICMP</string>
     <string name="settings_label_test_url">Test-URL</string>
     <string name="settings_hint_test_url">https://www.google.com/generate_204</string>
-    <string name="settings_desc_test_url">Данная ссылка отвечает за то какая ссылка будет использована для проверки задержки</string>
+    <string name="settings_desc_test_url">Данный параметр отвечает за то какая ссылка будет использована для проверки задержки</string>
     <string name="settings_label_ping_display">Отображение пинга</string>
     <string name="settings_label_ping_style">Стиль</string>
     <string name="settings_ping_style_time">Время</string>
@@ -144,6 +153,10 @@
     <string name="btn_next">Далее</string>
     <string name="btn_finish">Завершить</string>
     <string name="sub_my_servers">Мои сервера</string>
+    <string name="settings_header_logging">Логирование</string>
+    <string name="settings_label_core_log">Журнал SingBox</string>
+    <string name="settings_label_core_log_level">Уровень логирования</string>
+    <string name="settings_desc_logging">Включение журнала может помочь при отладке, но снижает приватность, так как в логи могут попасть адреса серверов и ключи.</string>
 
     <string name="settings_header_best_profile">Управление профилями</string>
     <string name="settings_label_best_profile">Выбирать лучший профиль</string>
@@ -182,7 +195,7 @@
     <string name="mtu_desc">Максимальный размер одного пакета данных (в байтах), который может быть передан за один раз.</string>
     <string name="icmp_desc">Проверяет доступен ли сервер, используется для базовой проверки связи с сервером.</string>
     <string name="tcp_desc">Проверяет скорость открытия порта на сервере и готов ли он принимать соединения.</string>
-    <string name="viaproxy_desc">Проверяет время полного прохождения HTTP запроса через прокси, проверяет реальную задержку, самый точный метод.</string>
+    <string name="viaproxy_desc">Проверяет время полного прохождения HTTP запроса через прокси, тестирует реальную задержку, самый точный метод.</string>
     <string name="mixedstack_desc">Средняя совместимость, поддерживает большую часть настроек туннеля, высокое энергопотребление.</string>
     <string name="gvisorstack_desc">Высокая совместимость, поддерживает все настройки туннеля, среднее энергопотребление.</string>
     <string name="systemstack_desc">Низкая совместимость, не поддерживает фрагментацию и еще некоторые настройки туннеля, низкое энергопотребление.</string>
@@ -215,4 +228,80 @@
 
     <string name="settings_label_custom_color">Свой цвет</string>
     <string name="settings_color_material_you">Material You</string>
+
+    <string name="vpn_error_permission_denied">Разрешение VPN отклонено</string>
+    <string name="onboarding_notifications_error">Разрешение на уведомления отклонено</string>
+    <string name="error_clipboard_empty">Буфер обмена пуст</string>
+    <string name="error_empty_name">Название не может быть пустым</string>
+    <string name="success_link_copied">Ссылка скопирована</string>
+    <string name="error_link_generation">Не удалось сгенерировать ссылку</string>
+    <string name="settings_language_in_dev">Смена языка (в разработке)</string>
+    <string name="notif_theme_changed_auto">Тема приложения была изменена автоматически!</string>
+    <string name="notif_theme_changed">Тема приложения была успешно изменена!</string>
+    <string name="notif_language_changed_auto">Язык приложения был изменен!</string>
+    <string name="settings_ping_interval_min_warning">Минимальный интервал — 10 секунд</string>
+    <string name="label_unknown">Неизвестно</string>
+    <string name="success_profile_added">Профиль %s успешно добавлен!</string>
+    <string name="success_subscription_added">Подписка %s успешно добавлена!</string>
+    <string name="error_import_failed">Не удалось добавить подписку или профиль!</string>
+    <string name="error_import_timeout">Не удалось добавить подписку или профиль! (таймаут 10 сек)</string>
+    <string name="notif_update_title">Обновление Flare</string>
+    <string name="ssh_status_connecting">Подключение к серверу...</string>
+    <string name="ssh_status_installing_xray">Установка Xray...</string>
+    <string name="ssh_status_generating_keys">Генерация ключей REALITY...</string>
+    <string name="ssh_error_keys">Не удалось получить ключи REALITY.</string>
+    <string name="ssh_status_configuring">Настройка конфигурации...</string>
+    <string name="ssh_error_config_write">Файл конфига не был записан на сервер</string>
+    <string name="ssh_status_restarting">Перезапуск сервиса Xray...</string>
+    <string name="ssh_status_waiting">Ожидание запуска...</string>
+    <string name="ssh_error_service_start">Сервис Xray не запустился (статус: %s)</string>
+    <string name="ssh_error_port_not_listening">Xray запущен, но не слушает порт %d!</string>
+    <string name="ssh_status_generating_client">Генерация настроек клиента...</string>
+    <string name="ssh_error_generic">Ошибка: %s</string>
+    <string name="label_selected">Выбрано</string>
+    <string name="label_and">" и "</string>
+    <string name="error_apps_list_empty">Список пуст. Проверьте разрешение на список приложений в настройках.</string>
+    <string name="label_expires">Истекает: %s</string>
+
+    <string name="label_uuid">UUID</string>
+    <string name="label_password">Пароль</string>
+    <string name="label_credentials">Данные</string>
+
+    <plurals name="plural_apps">
+        <item quantity="one">приложение</item>
+        <item quantity="few">приложения</item>
+        <item quantity="many">приложений</item>
+        <item quantity="other">приложений</item>
+    </plurals>
+    <plurals name="plural_sites">
+        <item quantity="one">сайт</item>
+        <item quantity="few">сайта</item>
+        <item quantity="many">сайтов</item>
+        <item quantity="other">сайтов</item>
+    </plurals>
+    <string name="label_support">Поддержка</string>
+    <string name="label_config_editor">Редактор конфига</string>
+    <string name="label_seconds_short">с</string>
+    <string name="desc_select_apps">Выберите приложения, которые будут использовать VPN.</string>
+    <string name="settings_header_hwid">Управление HWID</string>
+    <string name="settings_label_send_hwid">Передавать HWID</string>
+    <string name="settings_desc_hwid">HWID - идентификатор для привязки подписки к вашему устройству. Благодаря ему повторный импорт не считается за новое подключение. Все данные хранятся локально и никуда не передаются.</string>
+    <string name="error_open_settings">Не удалось открыть настройки системы</string>
+    <string name="error_invalid_format">Неверный формат. Поддерживаются: vless://, vmess://, ss://, trojan://, http(s):// и JSON</string>
+    <string name="error_parsing">Ошибка парсинга: %s</string>
+    <string name="error_json">Ошибка JSON: %s</string>
+    <string name="error_subscription_empty">Подписка пуста</string>
+    <string name="error_subscription">Ошибка подписки: %s</string>
+    <string name="label_imported_profile">Imported Profile</string>
+    <string name="label_output">Вывод: </string>
+    <string name="label_errors">Ошибки: </string>
+    <string name="label_logs">Журнал:</string>
+    <string name="btn_share_link">Поделиться ссылкой</string>
+    <string name="settings_btn_journal">Журнал</string>
+    <string name="journal_title">Журнал событий</string>
+    <string name="journal_clear">Очистить</string>
+    <string name="journal_waiting_logs">Ожидание новых событий…</string>
+    <string name="log_decoding_tunnel_creation">Создание туннеля...</string>
+    <string name="log_decoding_mtu_stack">MTU %1$s, STACK %2$s</string>
+    <string name="log_decoding_fragmentation">Фрагментация включена</string>
 </resources>

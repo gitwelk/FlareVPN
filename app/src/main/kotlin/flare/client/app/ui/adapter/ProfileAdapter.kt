@@ -217,7 +217,7 @@ class ProfileAdapter(
                 binding.tvExpireDate.visibility = View.VISIBLE
                 val expireMillis = if (item.entity.expire > 1000000000000L) item.entity.expire else item.entity.expire * 1000L
                 val date = java.text.SimpleDateFormat("dd.MM.yyyy", java.util.Locale.getDefault()).format(java.util.Date(expireMillis))
-                binding.tvExpireDate.text = "Истекает: $date"
+                binding.tvExpireDate.text = binding.root.context.getString(R.string.label_expires, date)
             } else {
                 binding.tvExpireDate.visibility = View.GONE
             }
@@ -326,8 +326,8 @@ class ProfileAdapter(
                 is PingState.Result -> {
                     binding.layoutPingContainer.visibility = View.VISIBLE
                     binding.pbPingLoading.visibility = View.GONE
-                    val showIcon = pingStyle == "Значок" || pingStyle == "Время и значок"
-                    val showText = pingStyle == "Время" || pingStyle == "Время и значок"
+                    val showIcon = pingStyle == "icon" || pingStyle == "both"
+                    val showText = pingStyle == "time" || pingStyle == "both"
                     if (state.isError || state.latency > 5000) {
                         if (showIcon) {
                             binding.ivPingIcon.visibility = View.VISIBLE

@@ -21,6 +21,7 @@
             android:textColor="@color/text_primary"
             android:textSize="26sp"
             android:fontFamily="@font/geologica_medium"
+            app:fontFamily="@font/geologica_medium"
             android:gravity="center"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toTopOf="@+id/tv_welcome_question"
@@ -37,6 +38,7 @@
             android:textColor="@color/text_secondary"
             android:textSize="17sp"
             android:fontFamily="@font/geologica_regular"
+            app:fontFamily="@font/geologica_regular"
             android:gravity="center"
             app:layout_constraintTop_toBottomOf="@id/tv_welcome_title"
             app:layout_constraintBottom_toTopOf="@+id/ll_welcome_options"
@@ -64,6 +66,7 @@
                 android:textColor="@color/white"
                 android:textSize="16sp"
                 android:fontFamily="@font/geologica_medium"
+            app:fontFamily="@font/geologica_medium"
                 android:clickable="true"
                 android:focusable="true"
                 android:layout_marginEnd="20dp" />
@@ -78,6 +81,7 @@
                 android:textColor="@color/text_primary"
                 android:textSize="16sp"
                 android:fontFamily="@font/geologica_medium"
+            app:fontFamily="@font/geologica_medium"
                 android:clickable="true"
                 android:focusable="true" />
 
@@ -102,6 +106,7 @@
             android:textColor="@color/text_primary"
             android:textSize="26sp"
             android:fontFamily="@font/geologica_medium"
+            app:fontFamily="@font/geologica_medium"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintStart_toStartOf="parent" />
 
@@ -141,7 +146,8 @@
                     android:text="@string/onboarding_notifications_title"
                     android:textColor="@color/text_primary"
                     android:textSize="18sp"
-                    android:fontFamily="@font/geologica_medium" />
+                    android:fontFamily="@font/geologica_medium"
+            app:fontFamily="@font/geologica_medium" />
 
                 <ImageView
                     android:id="@+id/iv_notif_check"
@@ -160,6 +166,7 @@
                 android:textColor="@color/text_secondary"
                 android:textSize="14sp"
                 android:fontFamily="@font/geologica_regular"
+            app:fontFamily="@font/geologica_regular"
                 android:lineSpacingExtra="3dp" />
         </LinearLayout>
 
@@ -199,7 +206,8 @@
                     android:text="@string/onboarding_battery_title"
                     android:textColor="@color/text_primary"
                     android:textSize="18sp"
-                    android:fontFamily="@font/geologica_medium" />
+                    android:fontFamily="@font/geologica_medium"
+            app:fontFamily="@font/geologica_medium" />
 
                 <ImageView
                     android:id="@+id/iv_battery_check"
@@ -218,6 +226,7 @@
                 android:textColor="@color/text_secondary"
                 android:textSize="14sp"
                 android:fontFamily="@font/geologica_regular"
+            app:fontFamily="@font/geologica_regular"
                 android:lineSpacingExtra="3dp" />
         </LinearLayout>
 
@@ -240,6 +249,7 @@
             android:textColor="@color/text_primary"
             android:textSize="26sp"
             android:fontFamily="@font/geologica_medium"
+            app:fontFamily="@font/geologica_medium"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent" />
@@ -252,6 +262,7 @@
             android:textColor="@color/text_primary"
             android:textSize="22sp"
             android:fontFamily="@font/geologica_medium"
+            app:fontFamily="@font/geologica_medium"
             android:gravity="center"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toTopOf="@+id/ll_frag_options"
@@ -280,6 +291,7 @@
                 android:textColor="@color/white"
                 android:textSize="16sp"
                 android:fontFamily="@font/geologica_medium"
+            app:fontFamily="@font/geologica_medium"
                 android:clickable="true"
                 android:focusable="true"
                 android:layout_marginEnd="20dp" />
@@ -294,6 +306,7 @@
                 android:textColor="@color/text_primary"
                 android:textSize="16sp"
                 android:fontFamily="@font/geologica_medium"
+            app:fontFamily="@font/geologica_medium"
                 android:clickable="true"
                 android:focusable="true" />
 
@@ -308,6 +321,7 @@
             android:textColor="@color/text_secondary"
             android:textSize="15sp"
             android:fontFamily="@font/geologica_regular"
+            app:fontFamily="@font/geologica_regular"
             android:gravity="center"
             android:lineSpacingExtra="3dp"
             app:layout_constraintTop_toBottomOf="@id/ll_frag_options"
@@ -334,6 +348,7 @@
             android:textColor="@color/text_primary"
             android:textSize="26sp"
             android:fontFamily="@font/geologica_medium"
+            app:fontFamily="@font/geologica_medium"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent" />
@@ -346,6 +361,7 @@
             android:textColor="@color/text_primary"
             android:textSize="22sp"
             android:fontFamily="@font/geologica_medium"
+            app:fontFamily="@font/geologica_medium"
             android:gravity="center"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toTopOf="@+id/ll_mux_options"
@@ -374,6 +390,7 @@
                 android:textColor="@color/white"
                 android:textSize="16sp"
                 android:fontFamily="@font/geologica_medium"
+            app:fontFamily="@font/geologica_medium"
                 android:clickable="true"
                 android:focusable="true"
                 android:layout_marginEnd="20dp" />
@@ -388,6 +405,7 @@
                 android:textColor="@color/text_primary"
                 android:textSize="16sp"
                 android:fontFamily="@font/geologica_medium"
+            app:fontFamily="@font/geologica_medium"
                 android:clickable="true"
                 android:focusable="true" />
 
@@ -402,6 +420,7 @@
             android:textColor="@color/text_secondary"
             android:textSize="15sp"
             android:fontFamily="@font/geologica_regular"
+            app:fontFamily="@font/geologica_regular"
             android:gravity="center"
             android:lineSpacingExtra="3dp"
             app:layout_constraintTop_toBottomOf="@id/ll_mux_options"
@@ -440,6 +459,7 @@
             android:textColor="@color/text_primary"
             android:textSize="24sp"
             android:fontFamily="@font/geologica_medium"
+            app:fontFamily="@font/geologica_medium"
             android:gravity="center"
             app:layout_constraintTop_toBottomOf="@id/iv_success_check"
             app:layout_constraintBottom_toTopOf="@+id/btn_onboarding_finish"
@@ -479,7 +499,8 @@
                 android:text="@string/onboarding_btn_go_main"
                 android:textColor="@color/text_primary"
                 android:textSize="16sp"
-                android:fontFamily="@font/geologica_medium" />
+                android:fontFamily="@font/geologica_medium"
+            app:fontFamily="@font/geologica_medium" />
         </LinearLayout>
 
     </androidx.constraintlayout.widget.ConstraintLayout>

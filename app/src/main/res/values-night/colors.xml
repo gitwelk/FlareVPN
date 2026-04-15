@@ -37,4 +37,9 @@
     <color name="gradient_cyan_end">#0000ACC1</color>
     <color name="gradient_white_start">#15FFFFFF</color>
     <color name="gradient_white_end">#00FFFFFF</color>
+    
+    <color name="dialog_glass_fill">#33000000</color>
+    <color name="dialog_glass_stroke">#4DFFFFFF</color>
+    <color name="dialog_glass_highlight">#33FFFFFF</color>
+
 </resources>

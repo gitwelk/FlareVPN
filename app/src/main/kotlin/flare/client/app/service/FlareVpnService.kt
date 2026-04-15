@@ -59,24 +59,21 @@ class FlareVpnService : VpnService() {
     }
 
     private fun startVpn(configJson: String) {
-        val settings = flare.client.app.data.SettingsManager(this)
-        if (settings.isStatusNotificationEnabled) {
-            val notification = buildNotification()
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                startForeground(
-                        NOTIF_ID,
-                        notification,
-                        ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
-                )
-            } else {
-                startForeground(NOTIF_ID, notification)
-            }
+        val notification = buildNotification()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            startForeground(
+                    NOTIF_ID,
+                    notification,
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+            )
+        } else {
+            startForeground(NOTIF_ID, notification)
         }
 
         serviceScope.launch { startVpnInternal(configJson) }
     }
 
-    private fun startVpnInternal(configJson: String) {
+    private suspend fun startVpnInternal(configJson: String) {
         try {
             GeoFileManager.ensureGeoFiles(this)
 
@@ -137,10 +134,12 @@ class FlareVpnService : VpnService() {
 
     private fun stopVpn() {
         statsJob?.cancel()
-        SingBoxManager.stop()
-        broadcastState(false)
-        stopForeground(STOP_FOREGROUND_REMOVE)
-        stopSelf()
+        serviceScope.launch {
+            SingBoxManager.stop()
+            broadcastState(false)
+            stopForeground(STOP_FOREGROUND_REMOVE)
+            stopSelf()
+        }
     }
 
     private fun broadcastState(connected: Boolean, error: Boolean = false) {
@@ -181,7 +180,7 @@ class FlareVpnService : VpnService() {
         val contentText = if (upStr != null && downStr != null) {
             "$upStr ↑ $downStr ↓"
         } else {
-            "VPN is active"
+            getString(R.string.vpn_active)
         }
 
         return NotificationCompat.Builder(this, NOTIF_CHANNEL)
@@ -189,7 +188,7 @@ class FlareVpnService : VpnService() {
                 .setContentText(contentText)
                 .setSmallIcon(R.drawable.ic_vpn_key)
                 .setContentIntent(mainPendingIntent)
-                .addAction(R.drawable.ic_vpn_key, "Отключиться", stopIntent)
+                .addAction(R.drawable.ic_vpn_key, getString(R.string.vpn_disconnect), stopIntent)
                 .setOngoing(true)
                 .build()
     }

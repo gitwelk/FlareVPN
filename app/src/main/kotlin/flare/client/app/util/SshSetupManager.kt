@@ -11,6 +11,7 @@ import java.util.UUID
 import java.security.SecureRandom
 import java.security.Security
 import org.bouncycastle.jce.provider.BouncyCastleProvider
+import flare.client.app.R
 
 object SecurityInitializer {
     private var initialized = false
@@ -65,7 +66,7 @@ class SshSetupManager(private val context: Context) {
         SecurityInitializer.init()
         val ssh = SSHClient()
         try {
-            _status.value = "Подключение к серверу..."
+            _status.value = context.getString(R.string.ssh_status_connecting)
             ssh.addHostKeyVerifier(PromiscuousVerifier())
             ssh.connect(host, sshPort)
             ssh.authPassword(user, pass)
@@ -73,14 +74,14 @@ class SshSetupManager(private val context: Context) {
 
             var xrayPath = ssh.exec("command -v xray || ( [ -x /usr/local/bin/xray ] && echo /usr/local/bin/xray ) || ( [ -x /usr/bin/xray ] && echo /usr/bin/xray)").lines().firstOrNull { it.isNotBlank() }?.trim() ?: ""
             if (xrayPath.isEmpty()) {
-                _status.value = "Установка Xray..."
+                _status.value = context.getString(R.string.ssh_status_installing_xray)
                 ssh.exec("sudo -n apt-get update -qq && sudo -n apt-get install -y curl 2>&1")
                 ssh.exec("curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh | sudo -n bash -s -- install 2>&1")
                 xrayPath = "/usr/local/bin/xray"
             }
             _progress.value = 30
 
-            _status.value = "Генерация ключей REALITY..."
+            _status.value = context.getString(R.string.ssh_status_generating_keys)
             val uuid = UUID.randomUUID().toString()
             val shortId = ByteArray(8).apply { SecureRandom().nextBytes(this) }
                 .joinToString("") { "%02x".format(it) }
@@ -95,11 +96,11 @@ class SshSetupManager(private val context: Context) {
                 ?.substringAfter(":")?.trim()
 
             if (privateKey.isNullOrEmpty() || publicKey.isNullOrEmpty()) {
-                throw Exception("Не удалось получить ключи REALITY.\nВывод: [$keyOut]\nОшибки: [$keyErr]")
+                throw Exception(context.getString(R.string.ssh_error_keys) + "\n" + context.getString(R.string.label_output) + " [$keyOut]\n" + context.getString(R.string.label_errors) + " [$keyErr]")
             }
             _progress.value = 55
 
-            _status.value = "Настройка конфигурации..."
+            _status.value = context.getString(R.string.ssh_status_configuring)
             val xrayConfig = """
 {
   "log": { "loglevel": "warning" },
@@ -150,31 +151,31 @@ class SshSetupManager(private val context: Context) {
 
             val fileSize = ssh.exec("sudo wc -c < $remoteConfigPath 2>&1")
             if (fileSize.trim() == "0" || fileSize.trim().isEmpty()) {
-                throw Exception("Файл конфига не был записан на сервер")
+                throw Exception(context.getString(R.string.ssh_error_config_write))
             }
             _progress.value = 70
 
-            _status.value = "Перезапуск сервиса Xray..."
+            _status.value = context.getString(R.string.ssh_status_restarting)
             ssh.exec("sudo systemctl enable xray 2>&1")
             ssh.exec("sudo systemctl restart xray 2>&1")
             _progress.value = 80
 
-            _status.value = "Ожидание запуска..."
+            _status.value = context.getString(R.string.ssh_status_waiting)
             Thread.sleep(3000)
 
             val serviceStatus = ssh.exec("sudo systemctl is-active xray 2>&1")
             if (!serviceStatus.trim().equals("active", ignoreCase = true)) {
                 val serviceLogs = ssh.exec("sudo journalctl -u xray -n 40 --no-pager 2>&1")
-                throw Exception("Сервис Xray не запустился (статус: $serviceStatus).\nЖурнал:\n${serviceLogs.take(600)}")
+                throw Exception(context.getString(R.string.ssh_error_service_start, serviceStatus) + ".\n" + context.getString(R.string.label_logs) + "\n${serviceLogs.take(600)}")
             }
 
             val portCheck = ssh.exec("sudo ss -tlnp 2>/dev/null | grep ':$vpnPort' || echo 'port-check-unavailable'")
             if (!portCheck.contains("$vpnPort") && !portCheck.contains("port-check-unavailable")) {
-                throw Exception("Xray запущен, но не слушает порт $vpnPort!")
+                throw Exception(context.getString(R.string.ssh_error_port_not_listening, vpnPort))
             }
 
             _progress.value = 90
-            _status.value = "Генерация настроек клиента..."
+            _status.value = context.getString(R.string.ssh_status_generating_client)
             val vlessUri = "vless://$uuid@$host:$vpnPort" +
                 "?security=reality" +
                 "&flow=xtls-rprx-vision" +
@@ -186,14 +187,14 @@ class SshSetupManager(private val context: Context) {
                 "#Flare-$host"
 
             val parsed = flare.client.app.data.parser.ClipboardParser.buildProfileFromUri(
-                vlessUri, subscriptionId = null
+                context, vlessUri, subscriptionId = null
             )
             _progress.value = 100
-            parsed.configJson ?: ""
+            vlessUri
 
         } catch (e: Exception) {
             android.util.Log.e("SshSetupManager", "SSH Setup Error: ${e.message}", e)
-            _status.value = "Ошибка: ${e.message?.take(200)}"
+            _status.value = context.getString(R.string.ssh_error_generic, e.message?.take(200) ?: "")
             null
         } finally {
             try { ssh.disconnect() } catch (_: Exception) {}
