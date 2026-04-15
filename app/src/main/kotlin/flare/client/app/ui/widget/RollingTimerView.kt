@@ -20,6 +20,7 @@ class RollingTimerView @JvmOverloads constructor(
     private var textColor: Int = ContextCompat.getColor(context, R.color.text_primary)
     private var textSizeSp: Float = 18f
     private var typeface: Typeface? = null
+    private var fontVariationSettings: String? = null
 
     init {
         orientation = HORIZONTAL
@@ -35,6 +36,7 @@ class RollingTimerView @JvmOverloads constructor(
                 setDigitTextSize(textSizeSp)
                 setTextColorInt(textColor)
                 setDigitTypeface(typeface)
+                setFontVariationSettings(fontVariationSettings)
             }
             digitViews.add(dv)
             addView(dv)
@@ -71,5 +73,10 @@ class RollingTimerView @JvmOverloads constructor(
     fun setTypeface(tf: Typeface?) {
         this.typeface = tf
         digitViews.forEach { it.setDigitTypeface(tf) }
+    }
+
+    fun setFontVariationSettings(settings: String?) {
+        this.fontVariationSettings = settings
+        digitViews.forEach { it.setFontVariationSettings(settings) }
     }
 }

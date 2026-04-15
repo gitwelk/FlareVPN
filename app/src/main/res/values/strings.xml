@@ -36,7 +36,9 @@
     <string name="settings_label_fragmentation">Фрагментация</string>
     <string name="settings_label_packet_type">Тип пакетов</string>
 
-    <string name="settings_label_fragment_interval">Задержка между фрагментами</string>
+    <string name="settings_label_fragment_interval">Задержка пакетов</string>
+    <string name="settings_label_fragment_size">Размер</string>
+    <string name="settings_label_fragment_sleep">Задержка</string>
 
     <string name="settings_label_noise_type">Тип</string>
     <string name="settings_label_noise_packet">Пакет</string>

@@ -312,6 +312,7 @@ class MainActivity : AppCompatActivity() {
     private fun initializeMainUI() {
         setupRecyclerView()
         setupButtons()
+        setupTimer()
         setupBottomNav()
         setupSettings()
         setupJsonEditor()
@@ -437,6 +438,17 @@ class MainActivity : AppCompatActivity() {
             } else {
                 viewModel.importFromClipboard(text)
             }
+        }
+    }
+
+    private fun setupTimer() {
+        try {
+            val googleSansFlex = ResourcesCompat.getFont(this, R.font.google_sans_flex)
+            binding.tvTimer.setTypeface(googleSansFlex)
+            binding.tvTimer.setFontVariationSettings("'wght' 500, 'slnt' 0, 'wdth' 90, 'ROND' 100")
+            binding.tvTimer.setTextSize(20f)
+        } catch (e: Exception) {
+            
         }
     }
 

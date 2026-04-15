@@ -84,4 +84,9 @@ class AnimatedDigitView @JvmOverloads constructor(
         (getChildAt(0) as? TextView)?.typeface = tf
         (getChildAt(1) as? TextView)?.typeface = tf
     }
+
+    fun setFontVariationSettings(settings: String?) {
+        (getChildAt(0) as? TextView)?.fontVariationSettings = settings
+        (getChildAt(1) as? TextView)?.fontVariationSettings = settings
+    }
 }
