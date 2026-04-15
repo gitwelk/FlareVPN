@@ -2794,7 +2794,7 @@ class MainActivity : AppCompatActivity() {
 
         lifecycleScope.launch {
             viewModel.connectionTimerText.collect { text ->
-                binding.tvTimer.text = text
+                binding.tvTimer.setTime(text)
                 binding.tvTimer.visibility = if (text.isEmpty()) View.GONE else View.VISIBLE
             }
         }

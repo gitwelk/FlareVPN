@@ -18,7 +18,7 @@ class AnimatedDigitView @JvmOverloads constructor(
     attrs: AttributeSet? = null
 ) : TextSwitcher(context, attrs), ViewSwitcher.ViewFactory {
 
-    private var currentDigit: Int = -1
+    private var currentText: String = ""
 
     init {
         if (childCount == 0) {
@@ -35,40 +35,53 @@ class AnimatedDigitView @JvmOverloads constructor(
                 ViewGroup.LayoutParams.WRAP_CONTENT
             )
             gravity = Gravity.CENTER
-            textSize = 14f
-            setTextColor(ResourcesCompat.getColor(resources, R.color.text_secondary, null))
+            textSize = 18f
+            setTextColor(android.graphics.Color.WHITE)
             typeface = try {
-                ResourcesCompat.getFont(context, R.font.geologica_regular)
+                ResourcesCompat.getFont(context, R.font.geologica_medium)
             } catch (e: Exception) {
-                android.graphics.Typeface.DEFAULT
+                android.graphics.Typeface.DEFAULT_BOLD
             }
         }
     }
 
-    fun setDigit(digit: Int, animate: Boolean = true) {
-        if (currentDigit == digit) return
-        currentDigit = digit
+    fun setText(text: String, animate: Boolean = true) {
+        if (currentText == text) return
+        currentText = text
         if (animate) {
-            setText(digit.toString())
+            super.setText(text)
         } else {
             val outAnim = outAnimation
             val inAnim = inAnimation
             setInAnimation(null)
             setOutAnimation(null)
-            setCurrentText(digit.toString())
+            setCurrentText(text)
             setInAnimation(inAnim)
             setOutAnimation(outAnim)
         }
     }
 
+    fun setDigit(digit: Int, animate: Boolean = true) {
+        setText(digit.toString(), animate)
+    }
+
     fun setTextColorRes(colorRes: Int) {
         val color = ResourcesCompat.getColor(resources, colorRes, null)
-        (currentView as? TextView)?.setTextColor(color)
-        (nextView as? TextView)?.setTextColor(color)
+        setTextColorInt(color)
+    }
+
+    fun setTextColorInt(color: Int) {
+        (getChildAt(0) as? TextView)?.setTextColor(color)
+        (getChildAt(1) as? TextView)?.setTextColor(color)
     }
 
     fun setDigitTextSize(sizeSp: Float) {
-        (currentView as? TextView)?.textSize = sizeSp
-        (nextView as? TextView)?.textSize = sizeSp
+        (getChildAt(0) as? TextView)?.textSize = sizeSp
+        (getChildAt(1) as? TextView)?.textSize = sizeSp
+    }
+
+    fun setDigitTypeface(tf: Typeface?) {
+        (getChildAt(0) as? TextView)?.typeface = tf
+        (getChildAt(1) as? TextView)?.typeface = tf
     }
 }
