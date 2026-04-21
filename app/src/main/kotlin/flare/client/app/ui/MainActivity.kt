@@ -3312,6 +3312,20 @@ class MainActivity : AppCompatActivity() {
         flare.client.app.util.AnimUtils.navigateForward(baseSettings, journalContainer)
         binding.bottomNav.hide()
 
+        
+        val MAX_LOG_LINES = 250
+        val lineBuffer = ArrayDeque<String>(MAX_LOG_LINES + 1)
+        val displayBuilder = android.text.SpannableStringBuilder()
+        var fileReadOffset = 0L
+        var isWaiting = true
+
+        fun resetJournalState() {
+            lineBuffer.clear()
+            displayBuilder.clear()
+            fileReadOffset = 0L
+            isWaiting = true
+        }
+
         btnBack?.setOnClickListener {
             flare.client.app.util.AnimUtils.navigateBack(journalContainer, baseSettings)
             binding.bottomNav.show()
@@ -3323,8 +3337,9 @@ class MainActivity : AppCompatActivity() {
                 val logFile = java.io.File(filesDir, "sing-box.log")
                 if (logFile.exists()) {
                     logFile.writeText("")
-                    tvContent?.text = ""
                 }
+                resetJournalState()
+                tvContent?.text = ""
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -3333,34 +3348,97 @@ class MainActivity : AppCompatActivity() {
         logJob?.cancel()
         logJob = lifecycleScope.launch(Dispatchers.IO) {
             val logFile = java.io.File(filesDir, "sing-box.log")
-            var lastContent = ""
+
             while (isActive) {
-                if (logFile.exists()) {
-                    val content = try {
-                        val lines = logFile.readLines()
-                        lines.joinToString("\n") { line ->
-                            flare.client.app.util.LogDecoder.decode(this@MainActivity, line)
-                        }
-                    } catch (e: Exception) {
-                        ""
-                    }
+                if (!logFile.exists()) {
+                    delay(1500)
+                    continue
+                }
+
+                try {
+                    val fileLength = logFile.length()
+
                     
-                    if (content.isEmpty()) {
+                    if (fileLength < fileReadOffset) {
+                        resetJournalState()
+                    }
+
+                    
+                    if (fileLength > fileReadOffset) {
+                        val newLines = mutableListOf<String>()
+                        java.io.RandomAccessFile(logFile, "r").use { raf ->
+                            raf.seek(fileReadOffset)
+                            val reader = java.io.BufferedReader(
+                                java.io.InputStreamReader(
+                                    java.io.FileInputStream(raf.fd),
+                                    Charsets.UTF_8
+                                )
+                            )
+                            var line: String?
+                            while (reader.readLine().also { line = it } != null) {
+                                val raw = line!!
+                                if (raw.isNotBlank()) {
+                                    newLines.add(
+                                        flare.client.app.util.LogDecoder.decode(this@MainActivity, raw)
+                                    )
+                                }
+                            }
+                            fileReadOffset = fileLength
+                        }
+
+                        if (newLines.isNotEmpty()) {
+                            isWaiting = false
+
+                            
+                            var needFullRebuild = false
+                            for (line in newLines) {
+                                if (lineBuffer.size >= MAX_LOG_LINES) {
+                                    lineBuffer.removeFirst()
+                                    needFullRebuild = true
+                                }
+                                lineBuffer.addLast(line)
+                            }
+
+                            val appendText: CharSequence
+                            if (needFullRebuild) {
+                                
+                                displayBuilder.clear()
+                                displayBuilder.append(lineBuffer.joinToString("\n"))
+                                appendText = displayBuilder
+                            } else {
+                                
+                                val suffix = buildString {
+                                    for (line in newLines) {
+                                        if (displayBuilder.isNotEmpty()) append('\n')
+                                        append(line)
+                                    }
+                                }
+                                displayBuilder.append(suffix)
+                                appendText = displayBuilder
+                            }
+
+                            withContext(Dispatchers.Main) {
+                                tvContent?.alpha = 1.0f
+                                tvContent?.text = appendText
+                                svJournal?.post {
+                                    svJournal.fullScroll(View.FOCUS_DOWN)
+                                }
+                            }
+                        }
+                    }
+
+                    
+                    if (isWaiting && lineBuffer.isEmpty()) {
                         withContext(Dispatchers.Main) {
                             tvContent?.text = getString(flare.client.app.R.string.journal_waiting_logs)
                             tvContent?.alpha = 0.5f
                         }
-                    } else if (content != lastContent) {
-                        withContext(Dispatchers.Main) {
-                            tvContent?.text = content
-                            tvContent?.alpha = 1.0f
-                            svJournal?.post {
-                                svJournal.fullScroll(View.FOCUS_DOWN)
-                            }
-                        }
-                        lastContent = content
                     }
+
+                } catch (e: Exception) {
+                    e.printStackTrace()
                 }
+
                 delay(1500)
             }
         }

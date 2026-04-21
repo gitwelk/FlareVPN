@@ -155,7 +155,7 @@
     <string name="settings_header_logging">Logging</string>
     <string name="settings_label_core_log">SingBox Log</string>
     <string name="settings_label_core_log_level">Log Level</string>
-    <string name="settings_desc_logging">Enabling logs can help with debugging, but reduces privacy as server addresses and keys may appear in the logs.</string>
+    <string name="settings_desc_logging">Enabling logs is useful for debugging but may expose your server addresses and keys.</string>
 
     <string name="settings_header_best_profile">Profile management</string>
     <string name="settings_label_best_profile">Select best profile</string>

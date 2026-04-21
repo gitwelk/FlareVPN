@@ -157,7 +157,7 @@
     <string name="settings_header_logging">Логирование</string>
     <string name="settings_label_core_log">Журнал SingBox</string>
     <string name="settings_label_core_log_level">Уровень логирования</string>
-    <string name="settings_desc_logging">Включение журнала может помочь при отладке, но снижает приватность, так как в логи могут попасть адреса серверов и ключи.</string>
+    <string name="settings_desc_logging">Включение логов полезно для отладки, но может раскрыть ваши серверные адреса и ключи.</string>
 
     <string name="settings_header_best_profile">Управление профилями</string>
     <string name="settings_label_best_profile">Выбирать лучший профиль</string>
@@ -288,7 +288,7 @@
     <string name="desc_select_apps">Выберите приложения, которые будут использовать VPN.</string>
     <string name="settings_header_hwid">Управление HWID</string>
     <string name="settings_label_send_hwid">Передавать HWID</string>
-    <string name="settings_desc_hwid">HWID - идентификатор для привязки подписки к вашему устройству. Благодаря ему повторный импорт не считается за новое подключение. Все данные хранятся локально и никуда не передаются.</string>
+    <string name="settings_desc_hwid">HWID - идентификатор для привязки подписки к вашему устройству. Позволяет повторно импортировать подписку без расхода лимита устройств. Данные не передаются.</string>
     <string name="error_open_settings">Не удалось открыть настройки системы</string>
     <string name="error_invalid_format">Неверный формат. Поддерживаются: vless://, vmess://, ss://, trojan://, http(s):// и JSON</string>
     <string name="error_parsing">Ошибка парсинга: %s</string>

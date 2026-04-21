@@ -614,27 +614,22 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         if (!settings.isUpdateCheckEnabled) return
 
         updateCheckJob = viewModelScope.launch(Dispatchers.IO) {
-            
-            val jitterMs = (1L + (Math.random() * 59).toLong()) * 1000L
-            delay(jitterMs)
-
-            if (isActive) {
-                flare.client.app.util.VersionManager.checkUpdates(app)
-                settings.lastUpdateCheckTime = System.currentTimeMillis()
-            }
-
-            
             while (isActive) {
-                val intervalHours = when (settings.updateCheckFrequency) {
-                    "daily" -> 24L
-                    "weekly" -> 168L
-                    "monthly" -> 720L
-                    else -> 24L
+                val intervalMs = when (settings.updateCheckFrequency) {
+                    "daily" -> 24 * 3600 * 1000L
+                    "weekly" -> 7 * 24 * 3600 * 1000L
+                    "monthly" -> 30 * 24 * 3600 * 1000L
+                    else -> 24 * 3600 * 1000L
                 }
-                val intervalMs = intervalHours * 3600 * 1000L
                 val lastCheck = settings.lastUpdateCheckTime
                 val now = System.currentTimeMillis()
-                val delayTime = (lastCheck + intervalMs) - now
+
+                val delayTime = if (lastCheck == 0L) {
+                    
+                    (1L + (Math.random() * 59).toLong()) * 1000L
+                } else {
+                    (lastCheck + intervalMs) - now
+                }
 
                 if (delayTime > 0) {
                     delay(delayTime)

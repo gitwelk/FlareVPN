@@ -390,6 +390,38 @@ object SingBoxManager {
             val settings = SettingsManager(context)
             val obj = JSONObject(configJson)
 
+            
+            
+            
+            run {
+                val dns = obj.optJSONObject("dns")
+                val servers = dns?.optJSONArray("servers")
+                val outbounds = obj.optJSONArray("outbounds")
+                if (dns != null && servers != null && outbounds != null) {
+                    val hasProxyOutbound = (0 until outbounds.length()).any {
+                        outbounds.optJSONObject(it)?.optString("tag") == "proxy"
+                    }
+                    if (!hasProxyOutbound) {
+                        val realProxyTag = (0 until outbounds.length())
+                            .mapNotNull { outbounds.optJSONObject(it) }
+                            .firstOrNull { ob ->
+                                val t = ob.optString("type", "")
+                                val tag = ob.optString("tag", "")
+                                tag.isNotEmpty() && t != "direct" && t != "block" && t != "dns"
+                            }?.optString("tag")
+                        if (realProxyTag != null) {
+                            Log.i(TAG, "injectAdvancedSettings: fixing dns-remote detour 'proxy' → '$realProxyTag'")
+                            for (i in 0 until servers.length()) {
+                                val server = servers.optJSONObject(i) ?: continue
+                                if (server.optString("detour") == "proxy") {
+                                    server.put("detour", realProxyTag)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
             if (settings.isSplitTunnelingEnabled && settings.splitTunnelingSites.isNotEmpty()) {
                 val modeSites = settings.splitTunnelingModeSites
                 val sites = settings.splitTunnelingSites.toList()
@@ -602,6 +634,7 @@ object SingBoxManager {
             val outbounds =
                     obj.optJSONArray("outbounds") ?: return obj.toString(2).replace("\\/", "/")
 
+            
             var proxyIndex = -1
             for (i in 0 until outbounds.length()) {
                 if (outbounds.optJSONObject(i)?.optString("tag") == "proxy") {
@@ -609,12 +642,21 @@ object SingBoxManager {
                     break
                 }
             }
+            if (proxyIndex == -1) {
+                
+                for (i in 0 until outbounds.length()) {
+                    val ob = outbounds.optJSONObject(i) ?: continue
+                    val t = ob.optString("type", "")
+                    if (t != "direct" && t != "block" && t != "dns" && t != "urltest" && t != "selector") {
+                        proxyIndex = i
+                        Log.w(TAG, "injectAdvancedSettings: 'proxy' outbound not found, using '${ob.optString("tag")}' as target for frag/mux")
+                        break
+                    }
+                }
+            }
 
             if (proxyIndex == -1) {
-                Log.w(
-                        TAG,
-                        "injectAdvancedSettings: 'proxy' outbound not found, skipping frag/noise"
-                )
+                Log.w(TAG, "injectAdvancedSettings: no suitable outbound found for frag/mux, skipping")
                 return obj.toString(2).replace("\\/", "/")
             }
 

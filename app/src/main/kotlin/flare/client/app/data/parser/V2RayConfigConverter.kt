@@ -638,6 +638,65 @@ object V2RayConfigConverter {
         )
     }
 
+    
+    private fun sanitizeProtocolFields(rules: JSONArray) {
+        for (i in 0 until rules.length()) {
+            val rule = rules.optJSONObject(i) ?: continue
+            val proto = rule.optJSONArray("protocol") ?: continue
+            val fixed = JSONArray()
+            var changed = false
+            for (j in 0 until proto.length()) {
+                val s = proto.optString(j, "")
+                if (s.startsWith("[") && s.endsWith("]")) {
+                    
+                    try {
+                        val inner = JSONArray(s)
+                        for (k in 0 until inner.length()) {
+                            val v = inner.optString(k, "")
+                            if (v.isNotEmpty()) fixed.put(v)
+                        }
+                        changed = true
+                    } catch (_: Exception) {
+                        fixed.put(s)
+                    }
+                } else if (s.isNotEmpty()) {
+                    fixed.put(s)
+                }
+            }
+            if (changed) rule.put("protocol", fixed)
+        }
+    }
+
+    
+    private fun fixDnsRemoteDetour(obj: JSONObject) {
+        val dns = obj.optJSONObject("dns") ?: return
+        val servers = dns.optJSONArray("servers") ?: return
+        val outbounds = obj.optJSONArray("outbounds") ?: return
+
+        
+        val hasProxyOutbound = (0 until outbounds.length()).any {
+            outbounds.optJSONObject(it)?.optString("tag") == "proxy"
+        }
+        if (hasProxyOutbound) return
+
+        
+        val realProxyTag = (0 until outbounds.length())
+            .mapNotNull { outbounds.optJSONObject(it) }
+            .firstOrNull { ob ->
+                val t = ob.optString("type", "")
+                val tag = ob.optString("tag", "")
+                tag.isNotEmpty() && t != "direct" && t != "block" && t != "dns"
+            }?.optString("tag") ?: return
+
+        Log.d("V2RayConfigConverter", "fixDnsRemoteDetour: replacing detour 'proxy' with '$realProxyTag'")
+        for (i in 0 until servers.length()) {
+            val server = servers.optJSONObject(i) ?: continue
+            if (server.optString("detour") == "proxy") {
+                server.put("detour", realProxyTag)
+            }
+        }
+    }
+
     private fun fixSingBox(obj: JSONObject): String {
         val route = obj.optJSONObject("route")
         if (route != null && route.has("rule_set")) {
@@ -705,6 +764,9 @@ object V2RayConfigConverter {
             }
         }
 
+        
+        fixDnsRemoteDetour(obj)
+
         if (route != null) {
             route.put("auto_detect_interface", true)
             val rules = route.optJSONArray("rules") ?: JSONArray().also { route.put("rules", it) }
@@ -723,6 +785,9 @@ object V2RayConfigConverter {
                     regularRules.put(rule)
                 }
             }
+
+            
+            sanitizeProtocolFields(regularRules)
 
             val newRules = JSONArray()
             
