@@ -93,7 +93,7 @@
                     app:layout_constraintStart_toStartOf="@id/btn_connect_container"
                     app:layout_constraintEnd_toEndOf="@id/btn_connect_container" />
 
-                <androidx.recyclerview.widget.RecyclerView
+                <flare.client.app.ui.widget.LiquidEdgeRecyclerView
                     android:id="@+id/rv_profiles"
                     android:layout_width="0dp"
                     android:layout_height="0dp"

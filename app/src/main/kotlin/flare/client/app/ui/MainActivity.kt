@@ -2851,9 +2851,10 @@ class MainActivity : AppCompatActivity() {
         lifecycleScope.launch {
             viewModel.displayItems.collect { items ->
                 adapter.submitList(items)
-                binding.rvProfiles.visibility = if (items.isEmpty()) View.GONE else View.VISIBLE
-                binding.tvAddHint.visibility = if (items.isEmpty()) View.VISIBLE else View.GONE
-                binding.tvAddProfiles.visibility = if (items.isEmpty()) View.GONE else View.VISIBLE
+                val isListEmpty = items.isEmpty()
+                binding.rvProfiles.visibility = if (isListEmpty) View.GONE else View.VISIBLE
+                binding.tvAddHint.visibility = if (isListEmpty) View.VISIBLE else View.GONE
+                binding.tvAddProfiles.visibility = if (isListEmpty) View.GONE else View.VISIBLE
             }
         }
 
