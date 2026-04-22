@@ -476,64 +476,6 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/settings_label_tls_spoof"
-            android:textColor="@color/text_secondary"
-            android:textSize="14sp"
-            android:fontFamily="@font/geologica_medium"
-            app:fontFamily="@font/geologica_medium"
-            android:layout_marginBottom="8dp"
-            android:layout_marginStart="4dp" />
-
-        <LinearLayout
-            android:id="@+id/block_tls_spoof"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:layout_marginBottom="4dp">
-
-            <LinearLayout
-                android:id="@+id/btn_toggle_tls_spoof"
-                android:layout_width="match_parent"
-                android:layout_height="64dp"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:background="@drawable/bg_grouped_all"
-                android:paddingHorizontal="16dp">
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="@string/settings_label_use_tls_spoof"
-                    android:textColor="@color/text_primary"
-                    android:textSize="16sp"
-                    android:fontFamily="@font/geologica_regular"
-            app:fontFamily="@font/geologica_regular" />
-
-                <androidx.appcompat.widget.SwitchCompat
-                    android:id="@+id/sw_tls_spoof"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    app:thumbTint="@color/white"
-                    app:trackTint="@color/accent" />
-            </LinearLayout>
-        </LinearLayout>
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/tls_spoof_desc"
-            android:textColor="@color/text_secondary"
-            android:textSize="12sp"
-            android:fontFamily="@font/geologica_regular"
-            app:fontFamily="@font/geologica_regular"
-            android:layout_marginBottom="24dp"
-            android:layout_marginStart="4dp"
-            android:alpha="0.7" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
             android:text="@string/settings_label_mtu_title"
             android:textColor="@color/text_secondary"
             android:textSize="14sp"

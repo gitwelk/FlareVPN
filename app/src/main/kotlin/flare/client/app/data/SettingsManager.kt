@@ -180,8 +180,4 @@ class SettingsManager(context: Context) {
             return if (level == "silent" || level == "none") "warn" else level
         }
         set(value) = prefs.edit().putString("core_log_level", value).apply()
-
-    var isTlsSpoofEnabled: Boolean
-        get() = prefs.getBoolean("tls_spoof_enabled", false)
-        set(value) = prefs.edit().putBoolean("tls_spoof_enabled", value).apply()
 }

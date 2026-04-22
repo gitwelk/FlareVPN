@@ -630,34 +630,27 @@ object SingBoxManager {
 
             val proxyOutbound = outbounds.getJSONObject(proxyIndex)
 
-            if (settings.isTlsSpoofEnabled || settings.isFragmentationEnabled) {
+            if (settings.isFragmentationEnabled) {
                 val tls = proxyOutbound.optJSONObject("tls")
                 if (tls != null) {
-                    if (settings.isTlsSpoofEnabled) {
-                        tls.put("spoof", true)
-                        Log.i(TAG, "injectAdvancedSettings: TLS spoof enabled for '${proxyOutbound.optString("tag")}'")
-                    }
+                    tls.put("fragment", true)
+                    tls.put("record_fragment", true)
 
-                    if (settings.isFragmentationEnabled) {
-                        tls.put("fragment", true)
-                        tls.put("record_fragment", true)
+                    if (settings.packetType != "disabled") {
+                        val intervalMs = settings.fragmentInterval.trim().toIntOrNull() ?: 10
+                        tls.put("fragment_fallback_delay", "${intervalMs}ms")
 
-                        if (settings.packetType != "disabled") {
-                            val intervalMs = settings.fragmentInterval.trim().toIntOrNull() ?: 10
-                            tls.put("fragment_fallback_delay", "${intervalMs}ms")
-
-                            Log.i(
-                                TAG,
-                                "injectAdvancedSettings: fragment fallback added (${intervalMs}ms)"
-                            )
-                        } else {
-                            Log.i(TAG, "injectAdvancedSettings: fragment fallback disabled")
-                        }
+                        Log.i(
+                            TAG,
+                            "injectAdvancedSettings: fragment fallback added (${intervalMs}ms)"
+                        )
+                    } else {
+                        Log.i(TAG, "injectAdvancedSettings: fragment fallback disabled")
                     }
                 } else {
                     Log.w(
                         TAG,
-                        "injectAdvancedSettings: proxy has no TLS block, skipping TLS features (spoof/frag)"
+                        "injectAdvancedSettings: proxy has no TLS block, skipping fragmentation"
                     )
                 }
             }
