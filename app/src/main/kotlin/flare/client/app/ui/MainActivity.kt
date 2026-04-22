@@ -2969,21 +2969,25 @@ class MainActivity : AppCompatActivity() {
 
         if (hasWeb || hasSupport) {
             dialogBinding.layoutSupport.visibility = View.VISIBLE
-            dialogBinding.ivSupportWeb.visibility = if (hasWeb) View.VISIBLE else View.GONE
-            dialogBinding.ivSupportTg.visibility = if (hasSupport) View.VISIBLE else View.GONE
+            
+            dialogBinding.layoutSupportWeb.visibility = if (hasWeb) View.VISIBLE else View.GONE
+            dialogBinding.tvSupportWebLink.text = if (hasWeb) formatSupportUrl(sub.webPageUrl) else ""
 
-            dialogBinding.ivSupportWeb.setOnClickListener {
+            dialogBinding.layoutSupportTg.visibility = if (hasSupport) View.VISIBLE else View.GONE
+            dialogBinding.tvSupportTgLink.text = if (hasSupport) formatSupportUrl(sub.supportUrl) else ""
+
+            dialogBinding.layoutSupportWeb.setOnClickListener {
                 try {
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(sub.webPageUrl))
+                    val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse(sub.webPageUrl))
                     startActivity(intent)
                 } catch (e: Exception) {
                     showSnackbar("Не удалось открыть ссылку")
                 }
             }
 
-            dialogBinding.ivSupportTg.setOnClickListener {
+            dialogBinding.layoutSupportTg.setOnClickListener {
                 try {
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(sub.supportUrl))
+                    val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse(sub.supportUrl))
                     startActivity(intent)
                 } catch (e: Exception) {
                     showSnackbar("Не удалось открыть Telegram")
@@ -3304,6 +3308,23 @@ class MainActivity : AppCompatActivity() {
         const val COLOR_ORANGE      = 0xFFFF9F0A.toInt()
         const val COLOR_ORANGE_END  = 0xFFFFB340.toInt()
     }
+    private fun formatSupportUrl(url: String): String {
+        return try {
+            val uri = android.net.Uri.parse(url)
+            val host = uri.host ?: return url
+            if (host.contains("t.me")) {
+                val path = uri.path
+                if (path != null && path.length > 1) {
+                    "@${path.substring(1)}"
+                } else url
+            } else {
+                host.removePrefix("www.")
+            }
+        } catch (e: Exception) {
+            url
+        }
+    }
+
     private fun getUpdateFreqDisplay(key: String): String {
         return when (key) {
             "daily", getString(R.string.update_freq_daily), "Daily" -> getString(R.string.update_freq_daily)

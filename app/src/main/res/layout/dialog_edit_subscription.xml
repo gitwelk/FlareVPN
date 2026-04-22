@@ -92,38 +92,75 @@
             android:layout_marginBottom="8dp" />
 
         <LinearLayout
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:orientation="horizontal">
+            android:minWidth="160dp"
+            android:orientation="vertical">
 
-            <ImageView
-                android:id="@+id/iv_support_web"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:src="@drawable/ic_chrome"
-                android:tint="@color/text_primary"
-                android:padding="8dp"
+            <LinearLayout
+                android:id="@+id/layout_support_web"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingVertical="10dp"
+                android:paddingHorizontal="14dp"
                 android:tag="accent_bg"
                 android:background="@drawable/bg_edit_text_field"
-                android:contentDescription="Browse"
-                android:layout_marginEnd="12dp"
+                android:layout_marginBottom="12dp"
                 android:clickable="true"
                 android:focusable="true"
-                android:foreground="?attr/selectableItemBackground" />
+                android:foreground="?attr/selectableItemBackground">
 
-            <ImageView
-                android:id="@+id/iv_support_tg"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:src="@drawable/ic_telegram"
-                android:tint="@color/text_primary"
-                android:padding="8dp"
+                <ImageView
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:src="@drawable/ic_chrome"
+                    android:tint="@color/text_primary" />
+
+                <TextView
+                    android:id="@+id/tv_support_web_link"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:textColor="@color/text_primary"
+                    android:textSize="13sp"
+                    android:fontFamily="@font/geologica_regular"
+                    android:singleLine="true"
+                    android:ellipsize="end" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/layout_support_tg"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingVertical="10dp"
+                android:paddingHorizontal="14dp"
                 android:tag="accent_bg"
                 android:background="@drawable/bg_edit_text_field"
-                android:contentDescription="Telegram"
                 android:clickable="true"
                 android:focusable="true"
-                android:foreground="?attr/selectableItemBackground" />
+                android:foreground="?attr/selectableItemBackground">
+
+                <ImageView
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:src="@drawable/ic_telegram"
+                    android:tint="@color/text_primary" />
+
+                <TextView
+                    android:id="@+id/tv_support_tg_link"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:textColor="@color/text_primary"
+                    android:textSize="13sp"
+                    android:fontFamily="@font/geologica_regular"
+                    android:singleLine="true"
+                    android:ellipsize="end" />
+            </LinearLayout>
         </LinearLayout>
     </LinearLayout>
 

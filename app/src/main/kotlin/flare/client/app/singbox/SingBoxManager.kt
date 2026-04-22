@@ -614,44 +614,21 @@ object SingBoxManager {
                     obj.optJSONArray("outbounds") ?: return obj.toString(2).replace("\\/", "/")
 
             
-            val proxyTag = findPrimaryProxyTag(outbounds)
-            var proxyIndex = -1
-            for (i in 0 until outbounds.length()) {
-                if (outbounds.optJSONObject(i)?.optString("tag") == proxyTag) {
-                    proxyIndex = i
-                    break
-                }
-            }
-
-            if (proxyIndex == -1) {
-                Log.w(TAG, "injectAdvancedSettings: no suitable outbound found for frag/mux, skipping")
-                return obj.toString(2).replace("\\/", "/")
-            }
-
-            val proxyOutbound = outbounds.getJSONObject(proxyIndex)
-
             if (settings.isFragmentationEnabled) {
-                val tls = proxyOutbound.optJSONObject("tls")
-                if (tls != null) {
-                    tls.put("fragment", true)
-                    tls.put("record_fragment", true)
+                val intervalMs = settings.fragmentInterval.trim().toIntOrNull() ?: 10
+                for (i in 0 until outbounds.length()) {
+                    val ob = outbounds.optJSONObject(i) ?: continue
+                    val tls = ob.optJSONObject("tls")
+                    if (tls != null) {
+                        tls.put("fragment", true)
+                        tls.put("record_fragment", true)
 
-                    if (settings.packetType != "disabled") {
-                        val intervalMs = settings.fragmentInterval.trim().toIntOrNull() ?: 10
-                        tls.put("fragment_fallback_delay", "${intervalMs}ms")
-
-                        Log.i(
-                            TAG,
-                            "injectAdvancedSettings: fragment fallback added (${intervalMs}ms)"
-                        )
-                    } else {
-                        Log.i(TAG, "injectAdvancedSettings: fragment fallback disabled")
+                        if (settings.packetType != "disabled") {
+                            tls.put("fragment_fallback_delay", "${intervalMs}ms")
+                        }
+                        
+                        Log.i(TAG, "injectAdvancedSettings: fragment injected on '${ob.optString("tag")}'")
                     }
-                } else {
-                    Log.w(
-                        TAG,
-                        "injectAdvancedSettings: proxy has no TLS block, skipping fragmentation"
-                    )
                 }
             }
 
