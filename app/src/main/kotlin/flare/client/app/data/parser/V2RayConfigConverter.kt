@@ -235,7 +235,16 @@ object V2RayConfigConverter {
 
                 val protocol = xRule.optString("protocol", "")
                 if (protocol.isNotEmpty()) {
+                    if (protocol.trim().startsWith("[")) {
+                        
+                        try {
+                            sbRule.put("protocol", JSONArray(protocol))
+                        } catch (e: Exception) {
                     sbRule.put("protocol", JSONArray(protocol.split(",").map { it.trim() }))
+                        }
+                    } else {
+                        sbRule.put("protocol", JSONArray(protocol.split(",").map { it.trim() }))
+                    }
                     hasContent = true
                 }
 
@@ -362,10 +371,17 @@ object V2RayConfigConverter {
             }
         }
 
+        
+        sb.put(
+            "http_clients",
+            JSONArray().put(JSONObject().apply { put("tag", "system") })
+        )
+
         val sbRoute =
                 JSONObject().apply {
                     put("auto_detect_interface", false)
                     put("final", primaryProxyTag)
+                    put("default_http_client", "system")
                     val sbRules = JSONArray().apply {
                         put(JSONObject().apply { put("protocol", "dns"); put("action", "hijack-dns") })
                         put(JSONObject().apply { put("port", 53); put("action", "hijack-dns") })
@@ -869,6 +885,50 @@ object V2RayConfigConverter {
                 }
             }
         }
+
+        if (!obj.has("http_clients")) {
+            obj.put(
+                "http_clients",
+                JSONArray().put(JSONObject().apply { put("tag", "system") })
+            )
+        }
+
+        
+        val httpClients = obj.optJSONArray("http_clients")
+        val httpClientTags = (0 until (httpClients?.length() ?: 0))
+            .mapNotNull { httpClients?.optJSONObject(it)?.optString("tag") }.toSet()
+
+        obj.optJSONArray("rule_set")?.let { ruleSets ->
+            for (i in 0 until ruleSets.length()) {
+                val rs = ruleSets.optJSONObject(i) ?: continue
+                if (rs.has("download_detour")) {
+                    val detour = rs.optString("download_detour", "")
+                    
+                    if (detour.isNotEmpty() && !httpClientTags.contains(detour)) {
+                        val clientTag = "http-client-$detour"
+                        if (!httpClientTags.contains(clientTag)) {
+                            httpClients?.put(JSONObject().apply {
+                                put("tag", clientTag)
+                                put("detour", detour)
+                            })
+                            
+                            if (route != null && !route.has("default_http_client")) {
+                                route.put("default_http_client", clientTag)
+                            }
+                        }
+                    }
+                    rs.remove("download_detour")
+                    Log.d("V2RayConfigConverter", "Migrated download_detour='$detour' from rule_set to http_clients")
+                }
+            }
+        }
+
+        if (route != null) {
+            if (!route.has("default_http_client")) {
+                route.put("default_http_client", "system")
+            }
+        }
+
         return obj.toString(2).replace("\\/", "/")
     }
 }

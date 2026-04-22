@@ -307,4 +307,12 @@
     <string name="log_decoding_tunnel_creation">Создание туннеля...</string>
     <string name="log_decoding_mtu_stack">MTU %1$s, STACK %2$s</string>
     <string name="log_decoding_fragmentation">Фрагментация включена</string>
+    <string name="settings_label_tls_spoof">TLS Spoof</string>
+    <string name="settings_label_use_tls_spoof">Включить TLS Spoof</string>
+    <string name="tls_spoof_desc">Помогает в обходе блокировок.</string>
+
+    <string name="settings_header_rules">Правила</string>
+    <string name="settings_label_rules_method">Способ</string>
+    <string name="rules_method_direct">Напрямую</string>
+    <string name="rules_method_proxy">Через прокси</string>
 </resources>

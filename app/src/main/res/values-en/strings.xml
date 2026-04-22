@@ -301,4 +301,12 @@
     <string name="log_decoding_tunnel_creation">Creating tunnel...</string>
     <string name="log_decoding_mtu_stack">MTU %1$s, STACK %2$s</string>
     <string name="log_decoding_fragmentation">Fragmentation enabled</string>
+    <string name="settings_label_tls_spoof">TLS Spoofing</string>
+    <string name="settings_label_use_tls_spoof">Enable TLS Spoofing</string>
+    <string name="tls_spoof_desc">Helps bypass blocking.</string>
+
+    <string name="settings_header_rules">Rules</string>
+    <string name="settings_label_rules_method">Method</string>
+    <string name="rules_method_direct">Direct</string>
+    <string name="rules_method_proxy">Via Proxy</string>
 </resources>

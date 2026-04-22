@@ -1838,6 +1838,21 @@ class MainActivity : AppCompatActivity() {
             swFakeIp?.toggle()
         }
 
+        val swTlsSpoof = adv.root.findViewById<androidx.appcompat.widget.SwitchCompat>(flare.client.app.R.id.sw_tls_spoof)
+        swTlsSpoof?.isChecked = settings.isTlsSpoofEnabled
+
+        swTlsSpoof?.setOnCheckedChangeListener { _, isChecked ->
+            if (settings.isTlsSpoofEnabled != isChecked) {
+                settings.isTlsSpoofEnabled = isChecked
+                showSettingsNotification()
+            }
+        }
+
+        val btnToggleTlsSpoof = adv.root.findViewById<android.view.View>(flare.client.app.R.id.btn_toggle_tls_spoof)
+        btnToggleTlsSpoof?.setOnClickListener {
+            swTlsSpoof?.toggle()
+        }
+
         adv.swFragmentation.setOnCheckedChangeListener { _, isChecked ->
             if (settings.isFragmentationEnabled != isChecked) {
                 settings.isFragmentationEnabled = isChecked
