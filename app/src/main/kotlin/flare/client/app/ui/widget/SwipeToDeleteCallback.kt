@@ -18,6 +18,17 @@ class SwipeToDeleteCallback(
     private val onSwiped: (Int) -> Unit
 ) : ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT) {
 
+    override fun getMovementFlags(
+        recyclerView: RecyclerView,
+        viewHolder: RecyclerView.ViewHolder
+    ): Int {
+        if (viewHolder.itemViewType != ProfileAdapter.TYPE_PROFILE) {
+            return makeMovementFlags(0, 0)
+        }
+        return super.getMovementFlags(recyclerView, viewHolder)
+    }
+
+
     private val paint = Paint()
     private val iconColor = Color.WHITE
     private val backgroundColor = Color.parseColor("#E53935") 
@@ -55,10 +66,11 @@ class SwipeToDeleteCallback(
         val isCanceled = dX == 0f && !isCurrentlyActive
 
         if (!isCanceled && actionState == ItemTouchHelper.ACTION_STATE_SWIPE) {
+            c.save()
+            c.clipRect(itemView.right.toFloat() + dX, itemView.top.toFloat(), itemView.right.toFloat(), itemView.bottom.toFloat())
             
             paint.color = backgroundColor
             val cornerRadius = 12f * recyclerView.context.resources.displayMetrics.density
-            
             
             val background = RectF(
                 itemView.right.toFloat() + dX - cornerRadius, 
@@ -98,6 +110,7 @@ class SwipeToDeleteCallback(
                 deleteIcon.draw(c)
                 c.restore()
             }
+            c.restore()
         }
 
         super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive)

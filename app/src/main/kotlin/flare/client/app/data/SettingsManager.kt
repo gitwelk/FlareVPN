@@ -133,6 +133,10 @@ class SettingsManager(context: Context) {
         get() = prefs.getBoolean("best_profile_only_if_connected", true)
         set(value) = prefs.edit().putBoolean("best_profile_only_if_connected", value).apply()
 
+    var isAdaptiveTunnelEnabled: Boolean
+        get() = prefs.getBoolean("adaptive_tunnel_enabled", false)
+        set(value) = prefs.edit().putBoolean("adaptive_tunnel_enabled", value).apply()
+
     var isBestProfileNotificationEnabled: Boolean
         get() = prefs.getBoolean("best_profile_notification_enabled", false)
         set(value) = prefs.edit().putBoolean("best_profile_notification_enabled", value).apply()

@@ -51,6 +51,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val refreshingSubs: StateFlow<Set<Long>> = _refreshingSubs.asStateFlow()
 
     private var autoUpdateJob: kotlinx.coroutines.Job? = null
+    private var healthCheckJob: kotlinx.coroutines.Job? = null
+    private var recoveryJob: kotlinx.coroutines.Job? = null
 
     enum class ConnectionState { DISCONNECTED, CONNECTING, CONNECTED }
     private val _connectionState = MutableStateFlow(ConnectionState.DISCONNECTED)
@@ -110,9 +112,17 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 _connectionState.value = if (connected) ConnectionState.CONNECTED else ConnectionState.DISCONNECTED
                 if (connected) {
                     startTimer()
+                    startHealthCheckJob()
                 } else {
                     stopTimer()
-                    if (hasError) flare.client.app.ui.notification.AppNotificationManager.showNotification(flare.client.app.ui.notification.NotificationType.ERROR, context.getString(R.string.vpn_error_tunnel_creation), 4)
+                    if (hasError) {
+                        val settings = SettingsManager(context)
+                        if (settings.isAdaptiveTunnelEnabled) {
+                            startRecovery()
+                        } else {
+                            flare.client.app.ui.notification.AppNotificationManager.showNotification(flare.client.app.ui.notification.NotificationType.ERROR, context.getString(R.string.vpn_error_tunnel_creation), 4)
+                        }
+                    }
                 }
             }
         }
@@ -129,6 +139,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         if (flare.client.app.singbox.SingBoxManager.isRunning) {
             _connectionState.value = ConnectionState.CONNECTED
             startTimer()
+            startHealthCheckJob()
         }
 
         viewModelScope.launch { _selectedProfileId.value = repository.getSelectedProfile()?.id }
@@ -145,6 +156,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun toggleSubscriptionExpanded(subId: Long) = expandedSubs.update { if (subId in it) it - subId else it + subId }
     fun selectProfile(profileId: Long) {
         selectionJob?.cancel()
+        recoveryJob?.cancel()
         selectionJob = viewModelScope.launch {
             repository.selectProfile(profileId)
             _selectedProfileId.value = profileId
@@ -239,7 +251,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             repository.updateSubscription(id, name, url)
         }
     }
-    fun connectOrDisconnect() = if (_connectionState.value != ConnectionState.DISCONNECTED) stopVpn() else startVpn()
+    fun connectOrDisconnect() = if (_connectionState.value != ConnectionState.DISCONNECTED) stopVpn(true) else startVpn()
     fun importFromClipboard(text: String) {
         viewModelScope.launch(Dispatchers.IO) {
             _importEvent.emit(ImportEvent.Loading)
@@ -299,7 +311,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    private fun stopVpn() { val app = getApplication<Application>(); app.startService(Intent(app, FlareVpnService::class.java).apply { action = FlareVpnService.ACTION_STOP }) }
+    private fun stopVpn(cancelRecovery: Boolean = false) {
+        if (cancelRecovery) recoveryJob?.cancel()
+        val app = getApplication<Application>()
+        app.startService(Intent(app, FlareVpnService::class.java).apply { action = FlareVpnService.ACTION_STOP })
+    }
     private fun startTimer() {
         timerJob?.cancel()
         timerJob = viewModelScope.launch {
@@ -364,6 +380,158 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun startHealthCheckJob() {
+        val app = getApplication<Application>()
+        val settings = SettingsManager(app)
+        healthCheckJob?.cancel()
+        if (!settings.isAdaptiveTunnelEnabled) return
+
+        healthCheckJob = viewModelScope.launch(Dispatchers.IO) {
+            val okHttpClient = okhttp3.OkHttpClient.Builder()
+                .connectTimeout(5, java.util.concurrent.TimeUnit.SECONDS)
+                .readTimeout(5, java.util.concurrent.TimeUnit.SECONDS)
+                .build()
+
+            while (isActive) {
+                if (_connectionState.value == ConnectionState.CONNECTED) {
+                    val url = settings.pingTestUrl
+                    try {
+                        val proxyTag = java.net.URLEncoder.encode(flare.client.app.singbox.SingBoxManager.primaryProxyTag, "UTF-8")
+                        val encodedUrl = java.net.URLEncoder.encode(url, "UTF-8")
+                        val checkUrl = "http://127.0.0.1:9092/proxies/$proxyTag/delay?url=$encodedUrl&timeout=5000"
+                        
+                        val request = okhttp3.Request.Builder().url(checkUrl).build()
+                        var isWorking = false
+                        okHttpClient.newCall(request).execute().use { response ->
+                            if (response.isSuccessful) {
+                                val body = response.body?.string() ?: ""
+                                val delay = org.json.JSONObject(body).optInt("delay", -1)
+                                if (delay > 0) {
+                                    isWorking = true
+                                }
+                            }
+                        }
+                        
+                        if (!isWorking) {
+                            Log.w("MainViewModel", "Active Health Check failed: Proxy returned timeout or error")
+                            startRecovery()
+                        }
+                    } catch (e: Exception) {
+                        Log.e("MainViewModel", "Active Health Check failed: Could not reach Clash API", e)
+                        startRecovery()
+                    }
+                }
+                delay(20000L) 
+            }
+        }
+    }
+
+    fun stopHealthCheckJob() {
+        healthCheckJob?.cancel()
+        healthCheckJob = null
+    }
+
+    private fun startRecovery() {
+        val app = getApplication<Application>()
+        val settings = SettingsManager(app)
+        if (!settings.isAdaptiveTunnelEnabled) return
+        
+        if (recoveryJob?.isActive == true) return
+        
+        recoveryJob = viewModelScope.launch {
+            Log.i("MainViewModel", "Starting adaptive tunnel recovery...")
+            val selectedId = _selectedProfileId.value ?: return@launch
+            
+            
+            stopVpn()
+            delay(1000)
+            startVpn()
+            
+            
+            val connectDeadline = SystemClock.elapsedRealtime() + 10_000L
+            while (SystemClock.elapsedRealtime() < connectDeadline) {
+                if (_connectionState.value == ConnectionState.CONNECTED) break
+                delay(500)
+            }
+            
+            
+            if (_connectionState.value == ConnectionState.CONNECTED) {
+                delay(2000) 
+                val okHttpClient = okhttp3.OkHttpClient.Builder()
+                    .connectTimeout(5, java.util.concurrent.TimeUnit.SECONDS)
+                    .readTimeout(5, java.util.concurrent.TimeUnit.SECONDS)
+                    .build()
+                val isWorking = withContext(Dispatchers.IO) {
+                    try {
+                        val proxyTag = java.net.URLEncoder.encode(flare.client.app.singbox.SingBoxManager.primaryProxyTag, "UTF-8")
+                        val encodedUrl = java.net.URLEncoder.encode(settings.pingTestUrl, "UTF-8")
+                        val checkUrl = "http://127.0.0.1:9092/proxies/$proxyTag/delay?url=$encodedUrl&timeout=5000"
+                        
+                        val request = okhttp3.Request.Builder().url(checkUrl).build()
+                        okHttpClient.newCall(request).execute().use { response ->
+                            if (response.isSuccessful) {
+                                val body = response.body?.string() ?: ""
+                                val delay = org.json.JSONObject(body).optInt("delay", -1)
+                                delay > 0
+                            } else {
+                                false
+                            }
+                        }
+                    } catch (e: Exception) {
+                        false
+                    }
+                }
+                if (isWorking) {
+                    Log.i("MainViewModel", "Recovery successful with current profile.")
+                    return@launch
+                }
+            }
+            
+            
+            Log.i("MainViewModel", "Current profile failed during recovery. Finding best profile...")
+            val allProfiles = repository.getAllProfiles().first()
+            val currentProfile = allProfiles.find { it.id == selectedId } ?: return@launch
+            val subId = currentProfile.subscriptionId
+            val profiles = allProfiles.filter { it.subscriptionId == subId }
+            if (profiles.size <= 1) return@launch
+            
+            speedTestProfile(profiles)
+            
+            val deadline = SystemClock.elapsedRealtime() + 15_000L
+            while (SystemClock.elapsedRealtime() < deadline) {
+                val pings = _pingStates.value
+                val allDone = profiles.all { p ->
+                    val state = pings[p.id]
+                    state is PingState.Result
+                }
+                if (allDone) break
+                delay(500)
+            }
+            
+            val pings = _pingStates.value
+            val best = profiles
+                .mapNotNull { p ->
+                    val state = pings[p.id]
+                    if (state is PingState.Result && !state.isError && state.latency >= 0) {
+                        p to state.latency
+                    } else null
+                }
+                .minByOrNull { it.second }?.first
+                
+            if (best != null && best.id != selectedId) {
+                Log.i("MainViewModel", "Switching to best profile: ${best.name}")
+                selectProfile(best.id)
+                
+                
+                val title = app.getString(R.string.notif_adaptive_tunnel_changed_title)
+                val body = app.getString(R.string.notif_adaptive_tunnel_changed_body, best.name)
+                flare.client.app.ui.notification.AppNotificationManager.showSystemNotification(app, title, body, isHighPriority = true)
+            } else {
+                Log.w("MainViewModel", "No working profile found during recovery.")
+            }
+        }
+    }
+
     private var bestProfileJob: kotlinx.coroutines.Job? = null
 
     fun startBestProfileJob() {
@@ -391,7 +559,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val selectedId = _selectedProfileId.value ?: return
         val allProfiles = repository.getAllProfiles().first()
         val selectedProfile = allProfiles.find { it.id == selectedId } ?: return
-        val subId = selectedProfile.subscriptionId ?: return
+        val subId = selectedProfile.subscriptionId
 
         val profiles = allProfiles.filter { it.subscriptionId == subId }
         if (profiles.size <= 1) return

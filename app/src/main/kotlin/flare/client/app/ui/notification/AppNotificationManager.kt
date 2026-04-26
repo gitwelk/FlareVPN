@@ -33,26 +33,42 @@ object AppNotificationManager {
         _notifications.tryEmit(NotificationData(type, text, durationSec, actionText, onAction))
     }
 
-    fun showSystemNotification(context: Context, title: String, text: String) {
+    fun showSystemNotification(context: Context, title: String, text: String, isHighPriority: Boolean = false) {
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        
+        val channelId = if (isHighPriority) "adaptive_tunnel_updates" else BEST_PROFILE_CHANNEL
+        val notifId = if (isHighPriority) 1003 else BEST_PROFILE_NOTIF_ID
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            if (manager.getNotificationChannel(BEST_PROFILE_CHANNEL) == null) {
+            if (manager.getNotificationChannel(channelId) == null) {
+                val importance = if (isHighPriority) NotificationManager.IMPORTANCE_HIGH else NotificationManager.IMPORTANCE_DEFAULT
                 val channel = NotificationChannel(
-                    BEST_PROFILE_CHANNEL,
-                    "Profile Updates",
-                    NotificationManager.IMPORTANCE_DEFAULT
+                    channelId,
+                    if (isHighPriority) "Adaptive Tunnel Updates" else "Profile Updates",
+                    importance
                 )
+                if (isHighPriority) {
+                    channel.enableVibration(true)
+                    channel.vibrationPattern = longArrayOf(0, 250)
+                }
                 manager.createNotificationChannel(channel)
             }
         }
 
-        val notification = NotificationCompat.Builder(context, BEST_PROFILE_CHANNEL)
+        val notification = NotificationCompat.Builder(context, channelId)
             .setContentTitle(title)
             .setContentText(text)
             .setSmallIcon(R.drawable.ic_vpn_key)
             .setAutoCancel(true)
+            .apply {
+                if (isHighPriority) {
+                    setPriority(NotificationCompat.PRIORITY_HIGH)
+                    setVibrate(longArrayOf(0, 250))
+                }
+            }
             .build()
-        manager.notify(BEST_PROFILE_NOTIF_ID, notification)
+            
+        manager.notify(notifId, notification)
     }
 }
 

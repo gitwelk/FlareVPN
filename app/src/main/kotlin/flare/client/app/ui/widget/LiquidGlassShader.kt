@@ -37,7 +37,11 @@ class LiquidGlassShader(private val view: View) {
     private var thickness = 0f
     private var intensity = 0f
     private var index = 0f
+    private var glassHeight = 0f
     private var foregroundColor = Color.TRANSPARENT
+    private var isNightMode = false
+    private var hasInnerShadow = false
+    private var clipToGlass = false
 
     fun update(
         left: Float, top: Float, right: Float, bottom: Float,
@@ -45,7 +49,11 @@ class LiquidGlassShader(private val view: View) {
         thickness: Float = 3f,
         intensity: Float = 1.0f,
         index: Float = 1.5f,
-        foregroundColor: Int = Color.argb(40, 255, 255, 255)
+        glassHeight: Float = 1.0f,
+        foregroundColor: Int = Color.argb(40, 255, 255, 255),
+        isNightMode: Boolean = false,
+        hasInnerShadow: Boolean = false,
+        clipToGlass: Boolean = false
     ) {
         val resX = view.width.toFloat()
         val resY = view.height.toFloat()
@@ -81,7 +89,11 @@ class LiquidGlassShader(private val view: View) {
             abs(this.thickness - thickness) > 0.1f ||
             abs(this.intensity - intensity) > 0.1f ||
             abs(this.index - index) > 0.1f ||
-            this.foregroundColor != foregroundColor
+            abs(this.glassHeight - glassHeight) > 0.01f ||
+            this.foregroundColor != foregroundColor ||
+            this.isNightMode != isNightMode ||
+            this.hasInnerShadow != hasInnerShadow ||
+            this.clipToGlass != clipToGlass
         ) {
             this.foregroundColor = foregroundColor
             resolutionX = resX
@@ -96,7 +108,11 @@ class LiquidGlassShader(private val view: View) {
             this.radiusLeftBottom = rLB
             this.thickness = thickness
             this.intensity = intensity
+            this.glassHeight = glassHeight
             this.index = index
+            this.isNightMode = isNightMode
+            this.hasInnerShadow = hasInnerShadow
+            this.clipToGlass = clipToGlass
 
             val a = Color.alpha(foregroundColor) / 255f
             val r = Color.red(foregroundColor) / 255f * a
@@ -110,8 +126,12 @@ class LiquidGlassShader(private val view: View) {
             shader.setFloatUniform("thickness", thickness)
             shader.setFloatUniform("refract_intensity", intensity)
             shader.setFloatUniform("refract_index", index)
+            shader.setFloatUniform("glass_height", glassHeight)
             shader.setFloatUniform("saturation", 1.45f)
             shader.setFloatUniform("foreground_color_premultiplied", r, g, b, a)
+            shader.setFloatUniform("is_dark_mode", if (isNightMode) 1f else 0f)
+            shader.setFloatUniform("has_inner_shadow", if (hasInnerShadow) 1f else 0f)
+            shader.setFloatUniform("clip_to_glass", if (clipToGlass) 1f else 0f)
 
             updateEffect()
         }

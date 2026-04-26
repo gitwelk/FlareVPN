@@ -15,6 +15,21 @@
         <item name="android:fontFamily">@font/geologica_regular</item>
         <item name="fontFamily">@font/geologica_regular</item>
         <item name="android:listDivider">@drawable/menu_divider</item>
+        <item name="materialSwitchStyle">@style/Widget.Flare.MaterialSwitch</item>
+    </style>
+    <style name="Widget.Flare.MaterialSwitch" parent="Widget.Material3.CompoundButton.MaterialSwitch">
+        <item name="android:minWidth">52dp</item>
+        <item name="android:minHeight">32dp</item>
+        <item name="android:scaleX">0.82</item>
+        <item name="android:scaleY">0.82</item>
+        <item name="android:transformPivotX">52dp</item>
+        <item name="android:transformPivotY">16dp</item>
+        <item name="thumbIcon">@drawable/bg_switch_thumb_glass</item>
+        <item name="thumbColor">@android:color/transparent</item>
+        <item name="thumbIconTint">@null</item>
+        <item name="trackDecoration">@drawable/bg_switch_track_glass</item>
+        <item name="trackDecorationTint">@null</item>
+        <item name="rippleColor">@android:color/transparent</item>
     </style>
 
 </resources>

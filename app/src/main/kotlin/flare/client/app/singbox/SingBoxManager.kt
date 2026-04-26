@@ -30,6 +30,9 @@ object SingBoxManager {
     var startTime: Long = 0L
         private set
 
+    var primaryProxyTag: String = "proxy"
+        private set
+
     private var setupDone = false
     private var logFile: File? = null
 
@@ -390,9 +393,13 @@ object SingBoxManager {
             val settings = SettingsManager(context)
             val obj = JSONObject(configJson)
 
-            
-            
-            
+            val experimental = obj.optJSONObject("experimental") ?: JSONObject().also { obj.put("experimental", it) }
+            val clashApi = experimental.optJSONObject("clash_api") ?: JSONObject().also { experimental.put("clash_api", it) }
+            clashApi.put("external_controller", "127.0.0.1:9092")
+
+            val outboundsArr = obj.optJSONArray("outbounds") ?: JSONArray()
+            primaryProxyTag = findPrimaryProxyTag(outboundsArr)
+
             run {
                 val dns = obj.optJSONObject("dns")
                 val servers = dns?.optJSONArray("servers")

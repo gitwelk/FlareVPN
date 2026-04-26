@@ -2,29 +2,38 @@ uniform shader img;
 uniform float fadeHeight;
 uniform float topOffset;
 uniform float time;
-uniform float edgeIntensity;
+uniform float topIntensity;
+uniform float bottomIntensity;
+uniform float viewHeight;
 
 half4 main(float2 fragCoord) {
-    if (edgeIntensity > 0.0 && fragCoord.y < topOffset + fadeHeight && fragCoord.y >= topOffset) {
-        float progress = (fragCoord.y - topOffset) / fadeHeight;
+    float intensity = 0.0;
+    float progress = 0.0;
+    bool isEdge = false;
+
+    if (topIntensity > 0.0 && fragCoord.y < topOffset + fadeHeight && fragCoord.y >= topOffset) {
+        intensity = topIntensity;
+        progress = (fragCoord.y - topOffset) / fadeHeight;
+        isEdge = true;
+    } else if (bottomIntensity > 0.0 && fragCoord.y > viewHeight - fadeHeight && fragCoord.y <= viewHeight) {
+        intensity = bottomIntensity;
+        progress = (viewHeight - fragCoord.y) / fadeHeight;
+        isEdge = true;
+    }
+
+    if (isEdge) {
+        float blurSize = (1.0 - progress) * intensity * 12.0;
         
-        // Calculate blur size based on how close we are to the top edge!
-        // At the bottom of the fade edge, blur is 0. At the very top, it is 12 * edgeIntensity.
-        float blurSize = (1.0 - progress) * edgeIntensity * 12.0;
-        
-        // We do a 5-tap cross blur to save performance but still get a nice glassy blur
         half4 color = half4(0.0);
         float total = 0.0;
         
         if (blurSize > 0.5) {
-            // Apply Box Blur in a plus shape + corners
             color += img.eval(fragCoord);
             color += img.eval(fragCoord + float2(blurSize, 0.0));
             color += img.eval(fragCoord + float2(-blurSize, 0.0));
             color += img.eval(fragCoord + float2(0.0, blurSize));
             color += img.eval(fragCoord + float2(0.0, -blurSize));
             
-            // Corners for extra volume
             float halfSize = blurSize * 0.7;
             color += img.eval(fragCoord + float2(halfSize, halfSize));
             color += img.eval(fragCoord + float2(-halfSize, halfSize));
@@ -38,15 +47,16 @@ half4 main(float2 fragCoord) {
         
         color /= total;
         
-        // Smoothly fade out alpha scaling up to edgeIntensity
-        float normalizedProgress = progress / edgeIntensity;
+        float normalizedProgress = progress / intensity;
         float alphaMult = (normalizedProgress >= 1.0) ? 1.0 : smoothstep(0.0, 1.0, normalizedProgress);
         
         color.rgb *= alphaMult;
         color.a *= alphaMult;
         
         return color;
-    } else if (edgeIntensity > 0.0 && fragCoord.y < topOffset) {
+    } else if (topIntensity > 0.0 && fragCoord.y < topOffset) {
+        return half4(0.0);
+    } else if (bottomIntensity > 0.0 && fragCoord.y > viewHeight) {
         return half4(0.0);
     }
     

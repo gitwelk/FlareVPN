@@ -48,6 +48,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.isActive
+import flare.client.app.util.GlassUtils
 import androidx.core.content.ContextCompat
 import androidx.core.content.res.ResourcesCompat
 import android.view.animation.DecelerateInterpolator
@@ -460,6 +461,46 @@ class MainActivity : AppCompatActivity() {
                 showSnackbar(getString(R.string.error_clipboard_empty))
             } else {
                 viewModel.importFromClipboard(text)
+            }
+        }
+
+        binding.btnClipboard.setOnLongClickListener { view ->
+            val items = listOf(
+                flare.client.app.util.GlassUtils.MenuItem(1, getString(R.string.menu_manual_input)) {
+                    showManualInputDialog()
+                },
+                flare.client.app.util.GlassUtils.MenuItem(2, getString(R.string.menu_qr_code)) {
+                    
+                },
+                flare.client.app.util.GlassUtils.MenuItem(3, getString(R.string.menu_file)) {
+                    
+                }
+            )
+            flare.client.app.util.GlassUtils.showGlassMenu(view, items)
+            true
+        }
+    }
+
+    private fun showManualInputDialog() {
+        flare.client.app.util.GlassUtils.showGlassDialog(this, R.layout.dialog_manual_input) { view, dialog ->
+            if (settings.isCustomColorEnabled) {
+                applyAccentToViewTree(view, runtimeAccentColor)
+            }
+
+            val etInput = view.findViewById<android.widget.EditText>(R.id.et_input)
+            val btnCancel = view.findViewById<android.view.View>(R.id.btn_cancel)
+            val btnAdd = view.findViewById<android.view.View>(R.id.btn_add)
+
+            btnCancel.setOnClickListener {
+                dialog.dismiss()
+            }
+
+            btnAdd.setOnClickListener {
+                val text = etInput.text.toString().trim()
+                if (text.isNotEmpty()) {
+                    viewModel.importFromClipboard(text)
+                    dialog.dismiss()
+                }
             }
         }
     }
@@ -1212,9 +1253,6 @@ class MainActivity : AppCompatActivity() {
         val btnToggleNotif = baseInclude?.findViewById<View>(flare.client.app.R.id.btn_toggle_notifications)
         if (swNotif != null && btnToggleNotif != null) {
             swNotif.isChecked = settings.isStatusNotificationEnabled
-            btnToggleNotif.setOnClickListener {
-                swNotif.toggle()
-            }
 
             swNotif.setOnCheckedChangeListener { _, isChecked ->
                 settings.isStatusNotificationEnabled = isChecked
@@ -1240,9 +1278,6 @@ class MainActivity : AppCompatActivity() {
         val btnToggleBestProfileNotif = baseInclude?.findViewById<View>(flare.client.app.R.id.btn_toggle_best_profile_notif)
         if (swBestProfileNotif != null && btnToggleBestProfileNotif != null) {
             swBestProfileNotif.isChecked = settings.isBestProfileNotificationEnabled
-            btnToggleBestProfileNotif.setOnClickListener {
-                swBestProfileNotif.toggle()
-            }
 
             swBestProfileNotif.setOnCheckedChangeListener { _, isChecked ->
                 settings.isBestProfileNotificationEnabled = isChecked
@@ -1253,9 +1288,6 @@ class MainActivity : AppCompatActivity() {
         val btnToggleHwid = baseInclude?.findViewById<View>(flare.client.app.R.id.btn_toggle_hwid)
         if (swHwid != null && btnToggleHwid != null) {
             swHwid.isChecked = settings.isHwidEnabled
-            btnToggleHwid.setOnClickListener {
-                swHwid.toggle()
-            }
             swHwid.setOnCheckedChangeListener { _, isChecked ->
                 settings.isHwidEnabled = isChecked
             }
@@ -1276,10 +1308,6 @@ class MainActivity : AppCompatActivity() {
                 else flare.client.app.R.drawable.bg_grouped_all
             )
             tvCoreLogLevelValue?.text = settings.coreLogLevel
-
-            btnToggleCoreLog.setOnClickListener {
-                swCoreLog.toggle()
-            }
 
             swCoreLog.setOnCheckedChangeListener { _, isChecked ->
                 settings.isCoreLogEnabled = isChecked
@@ -1432,6 +1460,20 @@ class MainActivity : AppCompatActivity() {
                 )
                 flare.client.app.util.GlassUtils.showGlassMenu(view, items)
             }
+            
+            val swAdaptiveTunnel = baseInclude?.findViewById<androidx.appcompat.widget.SwitchCompat>(flare.client.app.R.id.sw_adaptive_tunnel)
+            val btnToggleAdaptiveTunnel = baseInclude?.findViewById<View>(flare.client.app.R.id.btn_toggle_adaptive_tunnel)
+            if (swAdaptiveTunnel != null && btnToggleAdaptiveTunnel != null) {
+                swAdaptiveTunnel.isChecked = settings.isAdaptiveTunnelEnabled
+                swAdaptiveTunnel.setOnCheckedChangeListener { _, isChecked ->
+                    settings.isAdaptiveTunnelEnabled = isChecked
+                    if (isChecked) {
+                        viewModel.startHealthCheckJob()
+                    } else {
+                        viewModel.stopHealthCheckJob()
+                    }
+                }
+            }
 
             val swUpdateCheck = baseInclude?.findViewById<androidx.appcompat.widget.SwitchCompat>(flare.client.app.R.id.sw_update_check)
             val layoutUpdateSub = baseInclude?.findViewById<View>(flare.client.app.R.id.layout_update_check_sub)
@@ -1439,6 +1481,34 @@ class MainActivity : AppCompatActivity() {
             val blockUpdate = baseInclude?.findViewById<android.view.ViewGroup>(flare.client.app.R.id.block_update_check)
             val btnFreq = baseInclude?.findViewById<View>(flare.client.app.R.id.btn_update_frequency)
             val tvFreqValue = baseInclude?.findViewById<android.widget.TextView>(flare.client.app.R.id.tv_update_frequency_value)
+            
+            val tvHwidLabel = baseInclude?.findViewById<View>(flare.client.app.R.id.tv_hwid_label)
+            val tvHwidDesc = baseInclude?.findViewById<TextView>(flare.client.app.R.id.tv_hwid_desc)
+            if (tvHwidLabel != null && tvHwidDesc != null) {
+                flare.client.app.util.GlassUtils.attachTooltip(tvHwidLabel, tvHwidDesc.text)
+                tvHwidDesc.visibility = View.GONE
+            }
+
+            val tvCoreLogLabel = baseInclude?.findViewById<View>(flare.client.app.R.id.tv_core_log_label)
+            val tvLoggingDesc = baseInclude?.findViewById<TextView>(flare.client.app.R.id.tv_logging_desc)
+            if (tvCoreLogLabel != null && tvLoggingDesc != null) {
+                flare.client.app.util.GlassUtils.attachTooltip(tvCoreLogLabel, tvLoggingDesc.text)
+                tvLoggingDesc.visibility = View.GONE
+            }
+
+            val tvBestProfileLabel = baseInclude?.findViewById<View>(flare.client.app.R.id.tv_best_profile_label)
+            val tvBestProfileDesc = baseInclude?.findViewById<TextView>(flare.client.app.R.id.tv_best_profile_desc)
+            if (tvBestProfileLabel != null && tvBestProfileDesc != null) {
+                flare.client.app.util.GlassUtils.attachTooltip(tvBestProfileLabel, tvBestProfileDesc.text)
+                tvBestProfileDesc.visibility = View.GONE
+            }
+
+            val tvAdaptiveTunnelLabel = baseInclude?.findViewById<View>(flare.client.app.R.id.tv_adaptive_tunnel_label)
+            val tvAdaptiveTunnelDesc = baseInclude?.findViewById<TextView>(flare.client.app.R.id.tv_adaptive_tunnel_desc)
+            if (tvAdaptiveTunnelLabel != null && tvAdaptiveTunnelDesc != null) {
+                flare.client.app.util.GlassUtils.attachTooltip(tvAdaptiveTunnelLabel, tvAdaptiveTunnelDesc.text)
+                tvAdaptiveTunnelDesc.visibility = View.GONE
+            }
 
             if (swUpdateCheck != null && layoutUpdateSub != null && btnToggleUpdate != null && blockUpdate != null) {
                 swUpdateCheck.isChecked = settings.isUpdateCheckEnabled
@@ -1519,14 +1589,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showAppSelectionDialog(allApps: List<AppListItem>) {
-        val dialog = android.app.Dialog(this)
-        val dialogBinding = flare.client.app.databinding.DialogAppSelectionBinding.inflate(layoutInflater)
-        dialog.setContentView(dialogBinding.root)
-        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+        flare.client.app.util.GlassUtils.showGlassDialog(this, R.layout.dialog_app_selection, maxWidthDp = 300, blurRadius = 15f) { view, dialog ->
+            val dialogBinding = flare.client.app.databinding.DialogAppSelectionBinding.bind(view)
 
-        if (settings.isCustomColorEnabled) {
-            applyAccentToViewTree(dialogBinding.root, runtimeAccentColor)
-        }
+            if (settings.isCustomColorEnabled) {
+                applyAccentToViewTree(dialogBinding.root, runtimeAccentColor)
+            }
 
         val selectedPackages = settings.splitTunnelingApps.toMutableSet()
         val sitesSet = settings.splitTunnelingSites.toMutableSet()
@@ -1759,8 +1827,7 @@ class MainActivity : AppCompatActivity() {
             if (hasChanged) showSettingsNotification()
             dialog.dismiss()
         }
-
-        dialog.show()
+        }
     }
 
     data class AppListItem(
@@ -1853,10 +1920,6 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        val btnToggleFakeIp = adv.root.findViewById<android.view.View>(flare.client.app.R.id.btn_toggle_fake_ip)
-        btnToggleFakeIp?.setOnClickListener {
-            swFakeIp?.toggle()
-        }
 
         adv.swFragmentation.setOnCheckedChangeListener { _, isChecked ->
             if (settings.isFragmentationEnabled != isChecked) {
@@ -2166,15 +2229,40 @@ class MainActivity : AppCompatActivity() {
         val dividerSpeed = themeView.findViewById<View>(flare.client.app.R.id.divider_gradient_speed)
         val sliderSpeed = themeView.findViewById<com.google.android.material.slider.Slider>(flare.client.app.R.id.slider_gradient_speed)
 
+        val btnGradient = themeView.findViewById<View>(flare.client.app.R.id.btn_toggle_bg_gradient)
+        val btnAnimation = themeView.findViewById<View>(flare.client.app.R.id.btn_toggle_bg_gradient_animation)
+        val dividerAnimation = themeView.findViewById<View>(flare.client.app.R.id.divider_bg_gradient_animation)
+
         val updateAnimationUI = {
-            val animEnabled = swBgAnimation?.isChecked == true
             val gradEnabled = swBgGradient?.isChecked == true
-            val showSpeed = animEnabled && gradEnabled
-            layoutSpeed?.visibility = if (showSpeed) View.VISIBLE else View.GONE
-            dividerSpeed?.visibility = if (showSpeed) View.VISIBLE else View.GONE
-            themeView.findViewById<View>(flare.client.app.R.id.btn_toggle_bg_gradient_animation)?.setBackgroundResource(
-                if (showSpeed) flare.client.app.R.drawable.bg_grouped_middle else flare.client.app.R.drawable.bg_grouped_bottom
+            val animEnabled = swBgAnimation?.isChecked == true
+
+            android.transition.TransitionManager.beginDelayedTransition(
+                themeView as android.view.ViewGroup,
+                android.transition.AutoTransition().setDuration(200)
             )
+
+            if (!gradEnabled) {
+                btnAnimation?.visibility = View.GONE
+                dividerAnimation?.visibility = View.GONE
+                layoutSpeed?.visibility = View.GONE
+                dividerSpeed?.visibility = View.GONE
+                btnGradient?.setBackgroundResource(flare.client.app.R.drawable.bg_grouped_all)
+            } else {
+                btnAnimation?.visibility = View.VISIBLE
+                dividerAnimation?.visibility = View.VISIBLE
+                btnGradient?.setBackgroundResource(flare.client.app.R.drawable.bg_grouped_top)
+
+                if (animEnabled) {
+                    layoutSpeed?.visibility = View.VISIBLE
+                    dividerSpeed?.visibility = View.VISIBLE
+                    btnAnimation?.setBackgroundResource(flare.client.app.R.drawable.bg_grouped_middle)
+                } else {
+                    layoutSpeed?.visibility = View.GONE
+                    dividerSpeed?.visibility = View.GONE
+                    btnAnimation?.setBackgroundResource(flare.client.app.R.drawable.bg_grouped_bottom)
+                }
+            }
         }
 
         swBgGradient?.isChecked = settings.isBackgroundGradientEnabled
@@ -2183,9 +2271,7 @@ class MainActivity : AppCompatActivity() {
             updateAnimationUI()
             applyBackgroundGradient()
         }
-        themeView.findViewById<View>(flare.client.app.R.id.btn_toggle_bg_gradient)?.setOnClickListener {
-            swBgGradient?.toggle()
-        }
+
 
         swBgAnimation?.isChecked = settings.isGradientAnimationEnabled
         swBgAnimation?.setOnCheckedChangeListener { _, isChecked ->
@@ -2198,9 +2284,7 @@ class MainActivity : AppCompatActivity() {
                 stopGradientAnimation()
             }
         }
-        themeView.findViewById<View>(flare.client.app.R.id.btn_toggle_bg_gradient_animation)?.setOnClickListener {
-            swBgAnimation?.toggle()
-        }
+
 
         sliderSpeed?.value = settings.gradientAnimationSpeed
         sliderSpeed?.addOnChangeListener { _, value, fromUser ->
@@ -2273,9 +2357,6 @@ class MainActivity : AppCompatActivity() {
 
         
         refreshColorCircles(if (enabled) settings.accentColorKey else "")
-
-        
-        btnToggle?.setOnClickListener { swCustomColor?.toggle() }
 
         swCustomColor?.setOnCheckedChangeListener { _, isChecked ->
             settings.isCustomColorEnabled = isChecked
@@ -2641,6 +2722,14 @@ class MainActivity : AppCompatActivity() {
                 val csl = android.content.res.ColorStateList.valueOf(accent)
                 view.thumbTintList = csl
                 view.trackActiveTintList = csl
+                
+                val isNight = (view.resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES
+                if (isNight) {
+                    view.thumbStrokeColor = android.content.res.ColorStateList.valueOf(android.graphics.Color.WHITE)
+                    view.thumbStrokeWidth = 2.5f * view.resources.displayMetrics.density
+                } else {
+                    view.thumbStrokeWidth = 0f
+                }
             }
             is ViewGroup -> {
                 for (i in 0 until view.childCount) {
@@ -2948,19 +3037,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showEditSubscriptionDialog(sub: flare.client.app.data.model.SubscriptionEntity) {
-        val dialog = Dialog(this)
-        val dialogBinding = flare.client.app.databinding.DialogEditSubscriptionBinding.inflate(layoutInflater)
-        dialog.setContentView(dialogBinding.root)
-        dialog.window?.let { window ->
-            window.setBackgroundDrawableResource(android.R.color.transparent)
-            val params = window.attributes
-            params.width = (resources.displayMetrics.widthPixels * 0.9).toInt()
-            window.attributes = params
-        }
+        flare.client.app.util.GlassUtils.showGlassDialog(this, R.layout.dialog_edit_subscription) { view, dialog ->
+            val dialogBinding = flare.client.app.databinding.DialogEditSubscriptionBinding.bind(view)
 
-        if (settings.isCustomColorEnabled) {
-            applyAccentToViewTree(dialogBinding.root, runtimeAccentColor)
-        }
+            if (settings.isCustomColorEnabled) {
+                applyAccentToViewTree(dialogBinding.root, runtimeAccentColor)
+            }
 
         dialogBinding.etSubName.setText(sub.name)
         dialogBinding.etSubUrl.setText(sub.url)
@@ -3021,8 +3103,7 @@ class MainActivity : AppCompatActivity() {
         dialog.setOnCancelListener {
             viewModel.setEditingSubscription(null)
         }
-
-        dialog.show()
+        }
     }
 
     private fun updateConnectButton(state: MainViewModel.ConnectionState) {

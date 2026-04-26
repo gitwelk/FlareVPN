@@ -82,12 +82,11 @@
                     android:fontFamily="@font/geologica_regular"
             app:fontFamily="@font/geologica_regular" />
 
-                <androidx.appcompat.widget.SwitchCompat
+                <flare.client.app.ui.widget.GlassyMaterialSwitch
                     android:id="@+id/sw_fragmentation"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    app:thumbTint="@color/white"
-                    app:trackTint="@color/accent" />
+                    style="@style/Widget.Flare.MaterialSwitch" />
             </LinearLayout>
 
             <LinearLayout
@@ -224,12 +223,11 @@
                     android:fontFamily="@font/geologica_regular"
             app:fontFamily="@font/geologica_regular" />
 
-                <androidx.appcompat.widget.SwitchCompat
+                <flare.client.app.ui.widget.GlassyMaterialSwitch
                     android:id="@+id/sw_mux"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    app:thumbTint="@color/white"
-                    app:trackTint="@color/accent" />
+                    style="@style/Widget.Flare.MaterialSwitch" />
             </LinearLayout>
 
             <LinearLayout
@@ -452,12 +450,11 @@
                     android:fontFamily="@font/geologica_regular"
             app:fontFamily="@font/geologica_regular" />
 
-                <androidx.appcompat.widget.SwitchCompat
+                <flare.client.app.ui.widget.GlassyMaterialSwitch
                     android:id="@+id/sw_fake_ip"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    app:thumbTint="@color/white"
-                    app:trackTint="@color/accent" />
+                    style="@style/Widget.Flare.MaterialSwitch" />
             </LinearLayout>
         </LinearLayout>
 

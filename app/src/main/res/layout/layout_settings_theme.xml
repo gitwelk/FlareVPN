@@ -132,14 +132,11 @@
                     android:fontFamily="@font/geologica_regular"
             app:fontFamily="@font/geologica_regular" />
 
-                <androidx.appcompat.widget.SwitchCompat
+                <flare.client.app.ui.widget.GlassyMaterialSwitch
                     android:id="@+id/sw_custom_color"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:clickable="false"
-                    android:focusable="false"
-                    app:thumbTint="@color/white"
-                    app:trackTint="@color/accent" />
+                    style="@style/Widget.Flare.MaterialSwitch" />
 
             </LinearLayout>
 
@@ -278,18 +275,16 @@
                     android:fontFamily="@font/geologica_regular"
             app:fontFamily="@font/geologica_regular" />
 
-                <androidx.appcompat.widget.SwitchCompat
+                <flare.client.app.ui.widget.GlassyMaterialSwitch
                     android:id="@+id/sw_bg_gradient"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:clickable="false"
-                    android:focusable="false"
-                    app:thumbTint="@color/white"
-                    app:trackTint="@color/accent" />
+                    style="@style/Widget.Flare.MaterialSwitch" />
 
             </LinearLayout>
 
             <View
+                android:id="@+id/divider_bg_gradient_animation"
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
                 android:layout_marginStart="16dp"
@@ -316,14 +311,11 @@
                     android:fontFamily="@font/geologica_regular"
             app:fontFamily="@font/geologica_regular" />
 
-                <androidx.appcompat.widget.SwitchCompat
+                <flare.client.app.ui.widget.GlassyMaterialSwitch
                     android:id="@+id/sw_bg_gradient_animation"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:clickable="false"
-                    android:focusable="false"
-                    app:thumbTint="@color/white"
-                    app:trackTint="@color/accent" />
+                    style="@style/Widget.Flare.MaterialSwitch" />
 
             </LinearLayout>
 
@@ -359,7 +351,11 @@
                     android:valueFrom="0.1"
                     android:valueTo="3.0"
                     android:stepSize="0.1"
+                    app:thumbRadius="11dp"
+                    app:thumbElevation="4dp"
                     app:thumbColor="@color/accent"
+                    app:thumbStrokeColor="@color/slider_thumb_stroke"
+                    app:thumbStrokeWidth="2.5dp"
                     app:trackColorActive="@color/accent"
                     app:trackColorInactive="@color/divider_color" />
 

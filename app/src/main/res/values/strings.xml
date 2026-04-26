@@ -160,10 +160,15 @@
     <string name="settings_desc_logging">Включение логов полезно для отладки, но может раскрыть ваши серверные адреса и ключи.</string>
 
     <string name="settings_header_best_profile">Управление профилями</string>
-    <string name="settings_label_best_profile">Выбирать лучший профиль</string>
+    <string name="settings_label_best_profile">Автовыбор профиля</string>
     <string name="settings_label_best_profile_interval">Обновлять выбор каждые</string>
     <string name="settings_hint_best_profile_interval">1800</string>
     <string name="settings_desc_best_profile">Данная функция выбирает лучший сервер в подписке с самым маленьким пингом</string>
+    
+    <string name="settings_label_adaptive_tunnel">Адаптивный туннель</string>
+    <string name="settings_desc_adaptive_tunnel">Автоматически восстанавливает соединение при обрыве или выбирает рабочий сервер</string>
+    <string name="notif_adaptive_tunnel_changed_title">Профиль изменен</string>
+    <string name="notif_adaptive_tunnel_changed_body">Профиль был изменен на %1$s после обрыва соединения.</string>
 
     <string name="notif_best_profile_title">Обновление профиля</string>
     <string name="notif_best_profile_body">Выбор профиля был обновлен на %1$s с пингом %2$dms</string>
@@ -313,4 +318,12 @@
     <string name="settings_label_rules_method">Способ</string>
     <string name="rules_method_direct">Напрямую</string>
     <string name="rules_method_proxy">Через прокси</string>
+
+    <string name="menu_manual_input">Ручной ввод</string>
+    <string name="menu_qr_code">QR-Код</string>
+    <string name="menu_file">Файл</string>
+
+    <string name="manual_input_title">Ручной ввод</string>
+    <string name="manual_input_hint">vless://, vmess://, ss:// или ссылка на подписку</string>
+    <string name="btn_add">Добавить</string>
 </resources>

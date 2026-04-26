@@ -306,7 +306,7 @@ class SlidingBottomNav @JvmOverloads constructor(
         try {
             val windowBg = (context as? android.app.Activity)?.window?.decorView?.background
             val builder = glassBlurView.setupWith(blurTarget)
-                .setBlurRadius(3f) 
+                .setBlurRadius(2.5f) 
 
             if (windowBg != null) {
                 builder.setFrameClearDrawable(windowBg)
@@ -347,23 +347,47 @@ class SlidingBottomNav @JvmOverloads constructor(
             val pillH = glassBlurView.height.toFloat() - 14 * dp
             liquidPill.pillHeight = pillH
             liquidPill.updateShaders()
+
+            val isNightMode = (context.resources.configuration.uiMode and
+                Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+
+            
+            if (!isNightMode) {
+                val radius = 28f * dp
+                navContainerFrame.elevation = 20f * dp
+                navContainerFrame.outlineProvider = object : android.view.ViewOutlineProvider() {
+                    override fun getOutline(view: View, outline: android.graphics.Outline) {
+                        val y = view.height - glassBlurView.height
+                        outline.setRoundRect(0, y, view.width, view.height, radius)
+                        outline.alpha = 1.0f
+                    }
+                }
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                    navContainerFrame.outlineAmbientShadowColor = android.graphics.Color.argb(45, 0, 0, 0)
+                    navContainerFrame.outlineSpotShadowColor = android.graphics.Color.argb(90, 0, 0, 0)
+                }
+            } else {
+                navContainerFrame.elevation = 0f
+                navContainerFrame.outlineProvider = null
+            }
+
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                val isNightMode = (context.resources.configuration.uiMode and
-                    Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
                 val fgColor = if (isNightMode)
                     android.graphics.Color.argb(160, 32, 34, 40)
                 else
-                    android.graphics.Color.argb(70, 210, 215, 225)
+                    android.graphics.Color.argb(70, 255, 255, 255)
                 (liquidGlassShader as? LiquidGlassShader)?.update(
                     left = 0f, top = 0f,
                     right = glassBlurView.width.toFloat(),
                     bottom = glassBlurView.height.toFloat(),
-                    radiusLeftTop = 24f * dp, radiusRightTop = 24f * dp,
-                    radiusRightBottom = 24f * dp, radiusLeftBottom = 24f * dp,
+                    radiusLeftTop = 28f * dp, radiusRightTop = 28f * dp,
+                    radiusRightBottom = 28f * dp, radiusLeftBottom = 28f * dp,
                     thickness = 5f * dp,
                     intensity = 1.6f,
                     index = 1.5f,
-                    foregroundColor = fgColor
+                    glassHeight = 0.5f,
+                    foregroundColor = fgColor,
+                    isNightMode = isNightMode
                 )
             }
             if (!isInitialized) {

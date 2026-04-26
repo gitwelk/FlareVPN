@@ -83,12 +83,11 @@
                     android:fontFamily="@font/geologica_regular"
             app:fontFamily="@font/geologica_regular" />
 
-                <androidx.appcompat.widget.SwitchCompat
+                <flare.client.app.ui.widget.GlassyMaterialSwitch
                     android:id="@+id/sw_split_tunneling"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    app:thumbTint="@color/white"
-                    app:trackTint="@color/accent" />
+                    style="@style/Widget.Flare.MaterialSwitch" />
             </LinearLayout>
 
             <LinearLayout
@@ -202,12 +201,11 @@
 
                     </LinearLayout>
 
-                    <androidx.appcompat.widget.SwitchCompat
+                    <flare.client.app.ui.widget.GlassyMaterialSwitch
                         android:id="@+id/sw_autostart"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        app:thumbTint="@color/white"
-                        app:trackTint="@color/accent" />
+                        style="@style/Widget.Flare.MaterialSwitch" />
                 </LinearLayout>
             </LinearLayout>
         </LinearLayout>
@@ -251,13 +249,11 @@
                     android:fontFamily="@font/geologica_regular"
             app:fontFamily="@font/geologica_regular" />
 
-                <androidx.appcompat.widget.SwitchCompat
+                <flare.client.app.ui.widget.GlassyMaterialSwitch
                     android:id="@+id/sw_notifications"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    app:thumbTint="@color/white"
-                    app:trackTint="@color/accent"
-                    android:clickable="false" />
+                    style="@style/Widget.Flare.MaterialSwitch" />
             </LinearLayout>
 
             <View
@@ -287,13 +283,11 @@
                     android:fontFamily="@font/geologica_regular"
             app:fontFamily="@font/geologica_regular" />
 
-                <androidx.appcompat.widget.SwitchCompat
+                <flare.client.app.ui.widget.GlassyMaterialSwitch
                     android:id="@+id/sw_best_profile_notif"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    app:thumbTint="@color/white"
-                    app:trackTint="@color/accent"
-                    android:clickable="false" />
+                    style="@style/Widget.Flare.MaterialSwitch" />
             </LinearLayout>
         </LinearLayout>
 
@@ -327,6 +321,7 @@
                 android:focusable="true">
 
                 <TextView
+                    android:id="@+id/tv_hwid_label"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
@@ -336,17 +331,16 @@
                     android:fontFamily="@font/geologica_regular"
                     app:fontFamily="@font/geologica_regular" />
 
-                <androidx.appcompat.widget.SwitchCompat
+                <flare.client.app.ui.widget.GlassyMaterialSwitch
                     android:id="@+id/sw_hwid"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    app:thumbTint="@color/white"
-                    app:trackTint="@color/accent"
-                    android:clickable="false" />
+                    style="@style/Widget.Flare.MaterialSwitch" />
             </LinearLayout>
         </LinearLayout>
 
         <TextView
+            android:id="@+id/tv_hwid_desc"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/settings_desc_hwid"
@@ -357,7 +351,8 @@
             android:layout_marginBottom="24dp"
             android:layout_marginStart="4dp"
             android:layout_marginEnd="4dp"
-            android:alpha="0.8" />
+            android:alpha="0.8"
+            android:visibility="gone" />
 
         <TextView
             android:layout_width="wrap_content"
@@ -389,6 +384,7 @@
                 android:focusable="true">
 
                 <TextView
+                    android:id="@+id/tv_core_log_label"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
@@ -398,13 +394,11 @@
                     android:fontFamily="@font/geologica_regular"
                     app:fontFamily="@font/geologica_regular" />
 
-                <androidx.appcompat.widget.SwitchCompat
+                <flare.client.app.ui.widget.GlassyMaterialSwitch
                     android:id="@+id/sw_core_log"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    app:thumbTint="@color/white"
-                    app:trackTint="@color/accent"
-                    android:clickable="false" />
+                    style="@style/Widget.Flare.MaterialSwitch" />
             </LinearLayout>
 
             <LinearLayout
@@ -491,6 +485,7 @@
         </LinearLayout>
 
         <TextView
+            android:id="@+id/tv_logging_desc"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/settings_desc_logging"
@@ -501,7 +496,8 @@
             android:layout_marginBottom="24dp"
             android:layout_marginStart="4dp"
             android:layout_marginEnd="4dp"
-            android:alpha="0.8" />
+            android:alpha="0.8"
+            android:visibility="gone" />
 
         <TextView
             android:layout_width="wrap_content"
@@ -531,6 +527,7 @@
                 android:paddingHorizontal="16dp">
 
                 <TextView
+                    android:id="@+id/tv_best_profile_label"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
@@ -540,12 +537,11 @@
                     android:fontFamily="@font/geologica_regular"
             app:fontFamily="@font/geologica_regular" />
 
-                <androidx.appcompat.widget.SwitchCompat
+                <flare.client.app.ui.widget.GlassyMaterialSwitch
                     android:id="@+id/sw_best_profile"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    app:thumbTint="@color/white"
-                    app:trackTint="@color/accent" />
+                    style="@style/Widget.Flare.MaterialSwitch" />
             </LinearLayout>
 
             <LinearLayout
@@ -650,6 +646,7 @@
         </LinearLayout>
 
         <TextView
+            android:id="@+id/tv_best_profile_desc"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/settings_desc_best_profile"
@@ -657,10 +654,63 @@
             android:textSize="13sp"
             android:fontFamily="@font/geologica_regular"
             app:fontFamily="@font/geologica_regular"
+            android:layout_marginBottom="8dp"
+            android:layout_marginStart="4dp"
+            android:layout_marginEnd="4dp"
+            android:alpha="0.8"
+            android:visibility="gone" />
+
+        <LinearLayout
+            android:id="@+id/block_adaptive_tunnel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginBottom="12dp">
+
+            <LinearLayout
+                android:id="@+id/btn_toggle_adaptive_tunnel"
+                android:layout_width="match_parent"
+                android:layout_height="64dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:background="@drawable/bg_grouped_all"
+                android:paddingHorizontal="16dp"
+                android:clickable="true"
+                android:focusable="true">
+
+                <TextView
+                    android:id="@+id/tv_adaptive_tunnel_label"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/settings_label_adaptive_tunnel"
+                    android:textColor="@color/text_primary"
+                    android:textSize="16sp"
+                    android:fontFamily="@font/geologica_regular"
+                    app:fontFamily="@font/geologica_regular" />
+
+                <flare.client.app.ui.widget.GlassyMaterialSwitch
+                    android:id="@+id/sw_adaptive_tunnel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    style="@style/Widget.Flare.MaterialSwitch" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/tv_adaptive_tunnel_desc"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/settings_desc_adaptive_tunnel"
+            android:textColor="@color/text_secondary"
+            android:textSize="13sp"
+            android:fontFamily="@font/geologica_regular"
+            app:fontFamily="@font/geologica_regular"
             android:layout_marginBottom="24dp"
             android:layout_marginStart="4dp"
             android:layout_marginEnd="4dp"
-            android:alpha="0.8" />
+            android:alpha="0.8"
+            android:visibility="gone" />
 
         <TextView
             android:layout_width="wrap_content"
@@ -699,12 +749,11 @@
                     android:fontFamily="@font/geologica_regular"
             app:fontFamily="@font/geologica_regular" />
 
-                <androidx.appcompat.widget.SwitchCompat
+                <flare.client.app.ui.widget.GlassyMaterialSwitch
                     android:id="@+id/sw_update_check"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    app:thumbTint="@color/white"
-                    app:trackTint="@color/accent" />
+                    style="@style/Widget.Flare.MaterialSwitch" />
             </LinearLayout>
 
             <LinearLayout

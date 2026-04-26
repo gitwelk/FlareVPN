@@ -163,6 +163,11 @@
     <string name="settings_hint_best_profile_interval">1800</string>
     <string name="settings_desc_best_profile">This function selects the server with lowest ping in the subscription</string>
 
+    <string name="settings_label_adaptive_tunnel">Adaptive Tunnel</string>
+    <string name="settings_desc_adaptive_tunnel">Automatically recovers connection on drop or selects working server</string>
+    <string name="notif_adaptive_tunnel_changed_title">Profile changed</string>
+    <string name="notif_adaptive_tunnel_changed_body">Profile was changed to %1$s after connection drop.</string>
+
     <string name="notif_best_profile_title">Profile Update</string>
     <string name="notif_best_profile_body">Profile updated to %1$s with ping %2$dms</string>
 
@@ -307,4 +312,8 @@
     <string name="settings_label_rules_method">Method</string>
     <string name="rules_method_direct">Direct</string>
     <string name="rules_method_proxy">Via Proxy</string>
+
+    <string name="menu_manual_input">Manual input</string>
+    <string name="menu_qr_code">QR-Code</string>
+    <string name="menu_file">File</string>
 </resources>
