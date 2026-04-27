@@ -108,6 +108,23 @@
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintEnd_toEndOf="parent" />
 
+                <TextView
+                    android:id="@+id/tv_empty_state"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginHorizontal="32dp"
+                    android:gravity="center"
+                    android:text="@string/empty_profiles_hint"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="16sp"
+                    android:fontFamily="@font/geologica_medium"
+                    app:fontFamily="@font/geologica_medium"
+                    android:visibility="gone"
+                    app:layout_constraintTop_toBottomOf="@id/tv_timer"
+                    app:layout_constraintBottom_toTopOf="@id/layout_bottom_actions"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent" />
+
                 <LinearLayout
                     android:id="@+id/layout_bottom_actions"
                     android:layout_width="wrap_content"
@@ -211,45 +228,45 @@
                 app:layout_constraintTop_toTopOf="parent"
                 app:layout_constraintBottom_toBottomOf="parent" />
 
-            <include
-                android:id="@+id/layout_settings_base_container"
-                layout="@layout/layout_settings_base"
+            <ViewStub
+                android:id="@+id/stub_settings_base_container"
+                android:inflatedId="@+id/layout_settings_base_container"
+                android:layout="@layout/layout_settings_base"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:visibility="gone"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintTop_toTopOf="parent"
                 app:layout_constraintBottom_toBottomOf="parent" />
 
-            <include
-                android:id="@+id/layout_settings_subscriptions_container"
-                layout="@layout/layout_settings_subscriptions"
+            <ViewStub
+                android:id="@+id/stub_settings_subscriptions_container"
+                android:inflatedId="@+id/layout_settings_subscriptions_container"
+                android:layout="@layout/layout_settings_subscriptions"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:visibility="gone"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintTop_toTopOf="parent"
                 app:layout_constraintBottom_toBottomOf="parent" />
 
-            <include
-                android:id="@+id/layout_settings_theme_container"
-                layout="@layout/layout_settings_theme"
+            <ViewStub
+                android:id="@+id/stub_settings_theme_container"
+                android:inflatedId="@+id/layout_settings_theme_container"
+                android:layout="@layout/layout_settings_theme"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:visibility="gone"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintTop_toTopOf="parent"
                 app:layout_constraintBottom_toBottomOf="parent" />
 
-            <include
-                android:id="@+id/layout_settings_language_container"
-                layout="@layout/layout_settings_language"
+            <ViewStub
+                android:id="@+id/stub_settings_language_container"
+                android:inflatedId="@+id/layout_settings_language_container"
+                android:layout="@layout/layout_settings_language"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:visibility="gone"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintTop_toTopOf="parent"
@@ -405,21 +422,27 @@
 
             </androidx.constraintlayout.widget.ConstraintLayout>
 
-            <androidx.constraintlayout.widget.ConstraintLayout
-                android:id="@+id/layout_simple_editor"
+            <ViewStub
+                android:id="@+id/stub_simple_editor"
+                android:inflatedId="@+id/layout_simple_editor"
+                android:layout="@layout/layout_simple_editor"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:visibility="gone">
-                <include layout="@layout/layout_simple_editor" />
-            </androidx.constraintlayout.widget.ConstraintLayout>
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintBottom_toBottomOf="parent" />
 
-            <androidx.constraintlayout.widget.ConstraintLayout
-                android:id="@+id/layout_journal_container"
+            <ViewStub
+                android:id="@+id/stub_journal_container"
+                android:inflatedId="@+id/layout_journal_container"
+                android:layout="@layout/layout_journal"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:visibility="gone">
-                <include layout="@layout/layout_journal" />
-            </androidx.constraintlayout.widget.ConstraintLayout>
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintBottom_toBottomOf="parent" />
 
         </androidx.constraintlayout.widget.ConstraintLayout>
 

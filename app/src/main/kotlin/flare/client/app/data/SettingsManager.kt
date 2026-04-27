@@ -178,6 +178,10 @@ class SettingsManager(context: Context) {
         get() = prefs.getBoolean("core_log_enabled", false)
         set(value) = prefs.edit().putBoolean("core_log_enabled", value).apply()
 
+    var isAppTriggerEnabled: Boolean
+        get() = prefs.getBoolean("app_trigger_enabled", false)
+        set(value) = prefs.edit().putBoolean("app_trigger_enabled", value).apply()
+
     var coreLogLevel: String
         get() {
             val level = prefs.getString("core_log_level", "warn") ?: "warn"

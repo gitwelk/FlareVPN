@@ -465,6 +465,11 @@ object GlassUtils {
             "red"    -> flare.client.app.ui.MainActivity.COLOR_RED
             "pink"   -> flare.client.app.ui.MainActivity.COLOR_PINK
             "orange" -> flare.client.app.ui.MainActivity.COLOR_ORANGE
+            "indigo" -> flare.client.app.ui.MainActivity.COLOR_INDIGO
+            "cyan"   -> flare.client.app.ui.MainActivity.COLOR_CYAN
+            "amber"  -> flare.client.app.ui.MainActivity.COLOR_AMBER
+            "violet" -> flare.client.app.ui.MainActivity.COLOR_VIOLET
+            "teal"   -> flare.client.app.ui.MainActivity.COLOR_TEAL
             else     -> flare.client.app.ui.MainActivity.COLOR_DEFAULT
         }
     }

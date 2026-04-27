@@ -165,6 +165,53 @@
             android:fontFamily="@font/geologica_medium"
             app:fontFamily="@font/geologica_medium" />
     </LinearLayout>
+    
+    <LinearLayout
+        android:id="@+id/layout_trigger"
+        android:layout_width="match_parent"
+        android:layout_height="44dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:background="@drawable/bg_glass_input"
+        android:paddingHorizontal="12dp"
+        android:layout_marginBottom="16dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/trigger_label"
+            android:textColor="@color/text_primary"
+            android:textSize="16sp"
+            android:fontFamily="@font/geologica_medium"
+            app:fontFamily="@font/geologica_medium" />
+
+        <FrameLayout
+            android:id="@+id/btn_trigger_hint"
+            android:layout_width="18dp"
+            android:layout_height="18dp"
+            android:layout_marginStart="8dp"
+            android:background="@drawable/bg_glass_info_circle"
+            android:clickable="true"
+            android:focusable="true">
+            <ImageView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:padding="4dp"
+                android:src="@drawable/ic_info_i"
+                app:tint="@color/text_primary" />
+        </FrameLayout>
+
+        <View
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1" />
+
+        <flare.client.app.ui.widget.GlassyMaterialSwitch
+            android:id="@+id/switch_trigger"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            style="@style/Widget.Flare.MaterialSwitch" />
+    </LinearLayout>
 
     <LinearLayout
         android:layout_width="match_parent"

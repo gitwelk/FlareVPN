@@ -229,6 +229,46 @@
                             android:id="@+id/btn_color_orange"
                             android:layout_width="48dp"
                             android:layout_height="48dp"
+                            android:layout_marginEnd="10dp"
+                            android:clickable="true"
+                            android:focusable="true" />
+
+                        <FrameLayout
+                            android:id="@+id/btn_color_indigo"
+                            android:layout_width="48dp"
+                            android:layout_height="48dp"
+                            android:layout_marginEnd="10dp"
+                            android:clickable="true"
+                            android:focusable="true" />
+
+                        <FrameLayout
+                            android:id="@+id/btn_color_cyan"
+                            android:layout_width="48dp"
+                            android:layout_height="48dp"
+                            android:layout_marginEnd="10dp"
+                            android:clickable="true"
+                            android:focusable="true" />
+
+                        <FrameLayout
+                            android:id="@+id/btn_color_amber"
+                            android:layout_width="48dp"
+                            android:layout_height="48dp"
+                            android:layout_marginEnd="10dp"
+                            android:clickable="true"
+                            android:focusable="true" />
+
+                        <FrameLayout
+                            android:id="@+id/btn_color_violet"
+                            android:layout_width="48dp"
+                            android:layout_height="48dp"
+                            android:layout_marginEnd="10dp"
+                            android:clickable="true"
+                            android:focusable="true" />
+
+                        <FrameLayout
+                            android:id="@+id/btn_color_teal"
+                            android:layout_width="48dp"
+                            android:layout_height="48dp"
                             android:clickable="true"
                             android:focusable="true" />
 

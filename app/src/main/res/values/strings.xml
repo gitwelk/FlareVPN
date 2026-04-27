@@ -27,6 +27,7 @@
     <string name="language_restart_hint">Почти готово! Нужно перезапустить приложение.</string>
     <string name="label_servers">Сервера</string>
     <string name="btn_apply">Применить</string>
+    <string name="btn_grant">Выдать</string>
 
     <string name="settings_header_app">Настройки приложения</string>
     <string name="settings_item_ping">Пинг</string>
@@ -94,6 +95,13 @@
     <string name="split_mode_blacklist">Черный список</string>
     <string name="sites_hint">www.com\nwww2.com</string>
     <string name="label_mode">Режим</string>
+    <string name="trigger_label">Триггер</string>
+    <string name="trigger_hint">Данный параметр делает так, что VPN подключается только при использовании определенных приложений\nСписок доменов продолжает работать вместе с Триггером</string>
+    <string name="app_monitor_active">Триггер активен!</string>
+    <string name="trigger_vpn_permission_channel">Разрешение VPN для триггера</string>
+    <string name="trigger_vpn_permission_title">Триггеру нужно разрешение VPN</string>
+    <string name="trigger_vpn_permission_text">Откройте приложение и подтвердите разрешение, чтобы триггер мог запустить туннель.</string>
+    <string name="permission_usage_stats_needed">Для работы функции «Триггер» необходимо разрешение на доступ к статистике использования.</string>
 
     <string name="json_edit_success">JSON %s был успешно изменен.</string>
     <string name="label_profile_name">Название профиля</string>
@@ -127,7 +135,9 @@
     <string name="settings_header_notifications">Уведомления</string>
     <string name="settings_label_status_notification">Уведомление с статусом</string>
     <string name="settings_label_status">Статус</string>
-    <string name="hint_add_first_profile">Добавьте свой первый профиль или подписку с помощью кнопки ниже!</string>
+    <string name="hint_add_first_profile">Используйте кнопку ниже для добавления или зажмите для выбора метода!</string>
+    <string name="empty_profiles_hint">Пока что нет добавленных профилей!</string>
+    <string name="startup_loading_profiles">Загружаем профили и настройки...</string>
     <string name="sub_single_profiles">Список профилей</string>
     <string name="servers_title_flare">Сервера Flare</string>
     <string name="servers_desc_flare">Flare Servers: анонимные, не хранят логи, работают быстро и доступны 24/7.</string>
@@ -194,6 +204,8 @@
     <string name="onboarding_mux_question">Хотели бы использовать Mux?</string>
     <string name="onboarding_mux_desc">Mux помогает ускорить соединение, но плохо подходит для обхода блокировок</string>
     <string name="onboarding_success_title">Настройка успешно пройдена!</string>
+    <string name="onboarding_usage_title">Статистика использования</string>
+    <string name="onboarding_usage_desc">Это разрешение нужно для мониторинга приложений\nЧтобы функция \"Триггер\" могла корректно работать</string>
     <string name="onboarding_btn_go_main">На главную</string>
 
 

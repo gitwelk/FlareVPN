@@ -31,11 +31,16 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.coroutines.sync.withLock
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val db = AppDatabase.getInstance(application)
-    private val repository = ProfileRepository(db.profileDao(), db.subscriptionDao())
+    private val db by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
+        AppDatabase.getInstance(application)
+    }
+    private val repository by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
+        ProfileRepository(db.profileDao(), db.subscriptionDao())
+    }
 
     companion object {
         private const val VIRTUAL_SUB_ID = -1L
@@ -72,9 +77,21 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _importEvent = MutableSharedFlow<ImportEvent>()
     val importEvent: SharedFlow<ImportEvent> = _importEvent.asSharedFlow()
 
+    private val _displayItems = MutableStateFlow<List<DisplayItem>>(emptyList())
+    val displayItems: StateFlow<List<DisplayItem>> = _displayItems.asStateFlow()
+
+    private val _isStartupLoading = MutableStateFlow(true)
+    val isStartupLoading: StateFlow<Boolean> = _isStartupLoading.asStateFlow()
+
     val isAnySubscriptionExpanded: StateFlow<Boolean> = expandedSubs
         .map { it.isNotEmpty() }
         .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
+    private val initMutex = kotlinx.coroutines.sync.Mutex()
+    @Volatile
+    private var isInitialized = false
+    private var isReceiverRegistered = false
+    private var displayItemsJob: kotlinx.coroutines.Job? = null
 
     sealed class ImportEvent {
         object Loading : ImportEvent()
@@ -82,27 +99,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         data class Error(val message: String) : ImportEvent()
         data class NeedPermission(val intent: Intent) : ImportEvent()
     }
-
-    val displayItems: StateFlow<List<DisplayItem>> = combine(
-        repository.getAllSubscriptions(),
-        repository.getAllProfiles(),
-        expandedSubs,
-        _selectedProfileId,
-        _pingStates,
-        _refreshingSubs
-    ) { args ->
-        @Suppress("UNCHECKED_CAST")
-        val subs = args[0] as List<SubscriptionEntity>
-        val allProfiles = args[1] as List<ProfileEntity>
-        val expanded = args[2] as Set<Long>
-        val selId = args[3] as Long?
-        val pings = args[4] as Map<Long, PingState>
-        val refreshing = args[5] as Set<Long>
-
-        val profilesBySub = allProfiles.groupBy { it.subscriptionId }
-        val standalone = allProfiles.filter { it.subscriptionId == null }
-        buildDisplayList(subs, standalone, profilesBySub, expanded, selId, pings, refreshing)
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     private val vpnReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
@@ -128,29 +124,83 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    init {
-        val app = getApplication<Application>()
-        val flags = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-            Context.RECEIVER_NOT_EXPORTED
-        } else {
-            0
+    fun initializeAsync() {
+        if (isInitialized) return
+        viewModelScope.launch {
+            ensureInitialized()
         }
-        app.registerReceiver(vpnReceiver, IntentFilter(FlareVpnService.BROADCAST_STATE), flags)
-        if (flare.client.app.singbox.SingBoxManager.isRunning) {
-            _connectionState.value = ConnectionState.CONNECTED
-            startTimer()
-            startHealthCheckJob()
-        }
+    }
 
-        viewModelScope.launch { _selectedProfileId.value = repository.getSelectedProfile()?.id }
-        startAutoUpdateJob()
-        startBestProfileJob()
-        startUpdateCheckJob()
+    private suspend fun ensureInitialized() {
+        if (isInitialized) return
+        initMutex.withLock {
+            if (isInitialized) return@withLock
+
+            val app = getApplication<Application>()
+            if (!isReceiverRegistered) {
+                val flags = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                    Context.RECEIVER_NOT_EXPORTED
+                } else {
+                    0
+                }
+                app.registerReceiver(vpnReceiver, IntentFilter(FlareVpnService.BROADCAST_STATE), flags)
+                isReceiverRegistered = true
+            }
+
+            displayItemsJob?.cancel()
+            displayItemsJob = combine(
+                repository.getAllSubscriptions(),
+                repository.getAllProfiles(),
+                expandedSubs,
+                _selectedProfileId,
+                _pingStates,
+                _refreshingSubs
+            ) { args ->
+                @Suppress("UNCHECKED_CAST")
+                val subs = args[0] as List<SubscriptionEntity>
+                val allProfiles = args[1] as List<ProfileEntity>
+                val expanded = args[2] as Set<Long>
+                val selId = args[3] as Long?
+                val pings = args[4] as Map<Long, PingState>
+                val refreshing = args[5] as Set<Long>
+
+                val profilesBySub = allProfiles.groupBy { it.subscriptionId }
+                val standalone = allProfiles.filter { it.subscriptionId == null }
+                buildDisplayList(subs, standalone, profilesBySub, expanded, selId, pings, refreshing)
+            }
+                .onEach { items ->
+                    _displayItems.value = items
+                    _isStartupLoading.value = false
+                }
+                .launchIn(viewModelScope)
+
+            if (flare.client.app.singbox.SingBoxManager.isRunning) {
+                _connectionState.value = ConnectionState.CONNECTED
+                startTimer()
+                startHealthCheckJob()
+            }
+
+            viewModelScope.launch {
+                _selectedProfileId.value = repository.getSelectedProfile()?.id
+            }
+            startAutoUpdateJob()
+            startBestProfileJob()
+            startUpdateCheckJob()
+            isInitialized = true
+        }
+    }
+
+    init {
+        initializeAsync()
     }
 
     override fun onCleared() {
         super.onCleared()
-        getApplication<Application>().unregisterReceiver(vpnReceiver)
+        val app = getApplication<Application>()
+        if (isReceiverRegistered) {
+            app.unregisterReceiver(vpnReceiver)
+            isReceiverRegistered = false
+        }
     }
 
     fun toggleSubscriptionExpanded(subId: Long) = expandedSubs.update { if (subId in it) it - subId else it + subId }
@@ -158,6 +208,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         selectionJob?.cancel()
         recoveryJob?.cancel()
         selectionJob = viewModelScope.launch {
+            ensureInitialized()
             repository.selectProfile(profileId)
             _selectedProfileId.value = profileId
             
@@ -176,6 +227,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             displayItems.value.filterIsInstance<DisplayItem.SubscriptionItem>().find { it.entity.id == subId }?.entity?.name ?: getApplication<Application>().getString(R.string.label_unknown)
         }
         viewModelScope.launch {
+            ensureInitialized()
             if (subId == VIRTUAL_SUB_ID) {
                 repository.deleteStandaloneProfiles()
             } else {
@@ -192,6 +244,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
     fun speedTestSubscription(subId: Long) {
         viewModelScope.launch {
+            ensureInitialized()
             val profiles = if (subId == VIRTUAL_SUB_ID) {
                 repository.getAllProfiles().first().filter { it.subscriptionId == null }
             } else {
@@ -242,18 +295,21 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun showSubscriptionOptions(subId: Long) {}
     fun setEditingProfile(p: ProfileEntity?) { _editingProfile.value = p; _editingSubscription.value = null }
     fun setEditingSubscription(s: SubscriptionEntity?) { _editingSubscription.value = s; _editingProfile.value = null }
-    fun updateProfileConfig(id: Long, json: String) { viewModelScope.launch(Dispatchers.IO) { repository.updateProfileConfig(id, json) } }
-    fun updateProfile(id: Long, name: String, json: String) { viewModelScope.launch(Dispatchers.IO) { repository.updateProfile(id, name, json) } }
-    fun updateProfileFull(profile: ProfileEntity) { viewModelScope.launch(Dispatchers.IO) { repository.updateProfileFull(profile) } }
-    fun deleteProfile(id: Long) { viewModelScope.launch(Dispatchers.IO) { repository.deleteProfile(id) } }
+    fun updateProfileConfig(id: Long, json: String) { viewModelScope.launch(Dispatchers.IO) { ensureInitialized(); repository.updateProfileConfig(id, json) } }
+    fun updateProfile(id: Long, name: String, json: String) { viewModelScope.launch(Dispatchers.IO) { ensureInitialized(); repository.updateProfile(id, name, json) } }
+    fun updateProfileFull(profile: ProfileEntity) { viewModelScope.launch(Dispatchers.IO) { ensureInitialized(); repository.updateProfileFull(profile) } }
+    fun deleteProfile(id: Long) { viewModelScope.launch(Dispatchers.IO) { ensureInitialized(); repository.deleteProfile(id) } }
     fun updateSubscription(id: Long, name: String, url: String) {
         viewModelScope.launch(Dispatchers.IO) {
+            ensureInitialized()
             repository.updateSubscription(id, name, url)
         }
     }
     fun connectOrDisconnect() = if (_connectionState.value != ConnectionState.DISCONNECTED) stopVpn(true) else startVpn()
+    fun startVpnFromUi() = startVpn()
     fun importFromClipboard(text: String) {
         viewModelScope.launch(Dispatchers.IO) {
+            ensureInitialized()
             _importEvent.emit(ImportEvent.Loading)
             try {
                 val app = getApplication<Application>()
@@ -290,6 +346,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun startVpn() {
         viewModelScope.launch {
+            ensureInitialized()
             val profile = repository.getSelectedProfile() ?: return@launch
             val app = getApplication<Application>()
             val settings = SettingsManager(app)
@@ -359,10 +416,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun startAutoUpdateJob() {
         autoUpdateJob?.cancel()
-        val settings = SettingsManager(getApplication())
-        if (!settings.isSubAutoUpdateEnabled) return
 
         autoUpdateJob = viewModelScope.launch {
+            ensureInitialized()
+            val settings = SettingsManager(getApplication())
+            if (!settings.isSubAutoUpdateEnabled) return@launch
             while (isActive) {
                 val intervalRaw = settings.subAutoUpdateInterval.toLongOrNull() ?: 3600L
                 val interval = if (intervalRaw < 30L) 30L else intervalRaw
@@ -491,7 +549,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             Log.i("MainViewModel", "Current profile failed during recovery. Finding best profile...")
             val allProfiles = repository.getAllProfiles().first()
             val currentProfile = allProfiles.find { it.id == selectedId } ?: return@launch
-            val subId = currentProfile.subscriptionId
+            val subId = currentProfile.subscriptionId ?: return@launch
             val profiles = allProfiles.filter { it.subscriptionId == subId }
             if (profiles.size <= 1) return@launch
             
@@ -535,11 +593,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private var bestProfileJob: kotlinx.coroutines.Job? = null
 
     fun startBestProfileJob() {
-        val settings = SettingsManager(getApplication())
         bestProfileJob?.cancel()
-        if (!settings.isBestProfileEnabled) return
 
         bestProfileJob = viewModelScope.launch {
+            ensureInitialized()
+            val settings = SettingsManager(getApplication())
+            if (!settings.isBestProfileEnabled) return@launch
             while (isActive) {
                 val rawInterval = settings.bestProfileInterval.toLongOrNull() ?: 1800L
                 val interval = if (rawInterval < 10L) 10L else rawInterval
@@ -559,7 +618,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val selectedId = _selectedProfileId.value ?: return
         val allProfiles = repository.getAllProfiles().first()
         val selectedProfile = allProfiles.find { it.id == selectedId } ?: return
-        val subId = selectedProfile.subscriptionId
+        val subId = selectedProfile.subscriptionId ?: return
 
         val profiles = allProfiles.filter { it.subscriptionId == subId }
         if (profiles.size <= 1) return
@@ -777,11 +836,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun startUpdateCheckJob() {
         val app = getApplication<Application>()
-        val settings = SettingsManager(app)
         updateCheckJob?.cancel()
-        if (!settings.isUpdateCheckEnabled) return
 
         updateCheckJob = viewModelScope.launch(Dispatchers.IO) {
+            ensureInitialized()
+            val settings = SettingsManager(app)
+            if (!settings.isUpdateCheckEnabled) return@launch
             while (isActive) {
                 val intervalMs = when (settings.updateCheckFrequency) {
                     "daily" -> 24 * 3600 * 1000L

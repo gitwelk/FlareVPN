@@ -27,6 +27,7 @@
     <string name="language_restart_hint">Almost ready! Need to restart the app.</string>
     <string name="label_servers">Servers</string>
     <string name="btn_apply">Apply</string>
+    <string name="btn_grant">Grant</string>
 
     <string name="settings_header_app">App Settings</string>
     <string name="settings_item_ping">Ping</string>
@@ -92,6 +93,13 @@
     <string name="split_mode_blacklist">Blacklist</string>
     <string name="sites_hint">www.com\nwww2.com</string>
     <string name="label_mode">Mode</string>
+    <string name="trigger_label">Trigger</string>
+    <string name="trigger_hint">This parameter makes the VPN connect only when using certain apps\nThe domain list continues to work together with Trigger</string>
+    <string name="app_monitor_active">Trigger is active!</string>
+    <string name="trigger_vpn_permission_channel">Trigger VPN permission</string>
+    <string name="trigger_vpn_permission_title">Trigger needs VPN permission</string>
+    <string name="trigger_vpn_permission_text">Open the app and confirm the VPN permission so Trigger can start the tunnel.</string>
+    <string name="permission_usage_stats_needed">To use the «Trigger» feature, permission to access usage statistics is required.</string>
 
     <string name="json_edit_success">JSON %s was successfully modified.</string>
     <string name="label_profile_name">Profile name</string>
@@ -125,7 +133,9 @@
     <string name="settings_header_notifications">Notifications</string>
     <string name="settings_label_status_notification">Status notification</string>
     <string name="settings_label_status">Status</string>
-    <string name="hint_add_first_profile">Add your first profile or subscription using buttons below!</string>
+    <string name="hint_add_first_profile">Use the button below to add or long-press for more methods!</string>
+    <string name="empty_profiles_hint">No profiles added yet!</string>
+    <string name="startup_loading_profiles">Loading profiles and settings...</string>
     <string name="sub_single_profiles">List of profiles</string>
     <string name="servers_title_flare">Flare Servers</string>
     <string name="servers_desc_flare">Flare Servers: anonymous, no logs, fast and available 24/7.</string>
@@ -192,6 +202,8 @@
     <string name="onboarding_mux_question">Would you like to use Mux?</string>
     <string name="onboarding_mux_desc">Mux helps speed up connection, but is less effective against blocking</string>
     <string name="onboarding_success_title">Setup completed successfully!</string>
+    <string name="onboarding_usage_title">Usage Statistics</string>
+    <string name="onboarding_usage_desc">This permission is needed for application monitoring.\nSo that the \"Trigger\" function can work correctly</string>
     <string name="onboarding_btn_go_main">Go to Main</string>
 
 

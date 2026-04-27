@@ -17,6 +17,7 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
 import android.net.Uri
+import android.net.VpnService
 import android.os.Bundle
 import android.provider.Settings
 import android.text.SpannableString
@@ -26,10 +27,12 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewAnimationUtils
 import android.view.ViewGroup
+import android.view.ViewStub
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.annotation.IdRes
 import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -48,6 +51,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.yield
 import flare.client.app.util.GlassUtils
 import androidx.core.content.ContextCompat
 import androidx.core.content.res.ResourcesCompat
@@ -98,6 +102,12 @@ class MainActivity : AppCompatActivity() {
     private var gradientAnimator: ValueAnimator? = null
     private var loadingDialog: Dialog? = null
     private var logJob: kotlinx.coroutines.Job? = null
+    private var mainUiInitialized = false
+    private var settingsUiInitialized = false
+    private var serversUiInitialized = false
+    private var latestDisplayItems: List<DisplayItem> = emptyList()
+    private var isStartupLoading = true
+    private var hasPendingTriggerVpnPermissionRequest = false
 
 
 
@@ -108,7 +118,7 @@ class MainActivity : AppCompatActivity() {
     private val vpnPermLauncher =
             registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
                 if (result.resultCode == RESULT_OK) {
-                    viewModel.connectOrDisconnect()
+                    viewModel.startVpnFromUi()
                 } else {
                     showSnackbar(getString(R.string.vpn_error_permission_denied))
                 }
@@ -148,6 +158,14 @@ class MainActivity : AppCompatActivity() {
                 }
             }
 
+    private val usagePermLauncher =
+            registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+                if (isUsageAccessGranted()) {
+                    val b = binding.layoutOnboarding
+                    updateOnboardingPermissionState(b.btnPermissionUsage, b.ivUsageCheck, true)
+                }
+            }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -169,6 +187,7 @@ class MainActivity : AppCompatActivity() {
 
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        handleIntentAction(intent)
         checkThemeTransition()
 
         binding.root.clipToPadding = false
@@ -225,21 +244,7 @@ class MainActivity : AppCompatActivity() {
             setupOnboarding()
         } else {
             binding.layoutOnboarding.root.visibility = View.GONE
-            initializeMainUI()
-        }
-
-        lifecycleScope.launch {
-            viewModel.selectedProfileId.collect { id ->
-                if (id != null) {
-                    if (settings.isAutostartEnabled &&
-                                    viewModel.connectionState.value ==
-                                            MainViewModel.ConnectionState.DISCONNECTED
-                    ) {
-                        viewModel.connectOrDisconnect()
-                    }
-                    this@launch.coroutineContext[kotlinx.coroutines.Job]?.cancel()
-                }
-            }
+            scheduleMainUiInitialization()
         }
 
         onBackPressedDispatcher.addCallback(
@@ -313,17 +318,27 @@ class MainActivity : AppCompatActivity() {
         )
     }
 
+    private fun scheduleMainUiInitialization() {
+        if (mainUiInitialized) return
+        binding.root.post {
+            if (!isDestroyed && !isFinishing) {
+                initializeMainUI()
+            }
+        }
+    }
+
     private fun initializeMainUI() {
+        if (mainUiInitialized) return
+        mainUiInitialized = true
+
         setupRecyclerView()
         setupButtons()
         setupTimer()
         setupBottomNav()
-        setupSettings()
         setupJsonEditor()
-        setupSimpleEditor()
-        setupServers()
         observeViewModel()
         observeNotifications()
+        warmUpDeferredUiSections()
         restorePendingNavScreen()
         
         if (settings.isCustomColorEnabled) {
@@ -334,6 +349,8 @@ class MainActivity : AppCompatActivity() {
                 adapter.accentColor = accent
             }
             applyAccentColorsToUI(accent, accentEnd)
+        } else {
+            applyAccentColorsToUI(COLOR_DEFAULT, COLOR_DEFAULT_END)
         }
         if (themeChangedJustNow && settings.pendingNavScreen.isEmpty()) {
             themeChangedJustNow = false
@@ -343,6 +360,92 @@ class MainActivity : AppCompatActivity() {
                 3
             )
         }
+
+        viewModel.initializeAsync()
+        requestPendingTriggerVpnPermissionIfNeeded()
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleIntentAction(intent)
+        requestPendingTriggerVpnPermissionIfNeeded()
+    }
+
+    private fun handleIntentAction(intent: Intent?) {
+        if (intent?.getBooleanExtra(
+                flare.client.app.service.AppMonitorService.EXTRA_REQUEST_VPN_PERMISSION,
+                false
+            ) == true
+        ) {
+            hasPendingTriggerVpnPermissionRequest = true
+        }
+    }
+
+    private fun requestPendingTriggerVpnPermissionIfNeeded() {
+        if (!hasPendingTriggerVpnPermissionRequest || !mainUiInitialized) return
+        if (binding.layoutOnboarding.root.visibility == View.VISIBLE) return
+        if (viewModel.connectionState.value != MainViewModel.ConnectionState.DISCONNECTED) {
+            hasPendingTriggerVpnPermissionRequest = false
+            return
+        }
+
+        hasPendingTriggerVpnPermissionRequest = false
+        val vpnIntent = VpnService.prepare(this)
+        if (vpnIntent != null) {
+            vpnPermLauncher.launch(vpnIntent)
+        } else {
+            viewModel.startVpnFromUi()
+        }
+    }
+
+    private fun ensureSettingsUiInitialized() {
+        if (settingsUiInitialized) return
+        ensureSettingsDetailViewsInflated()
+        setupSettings()
+        settingsUiInitialized = true
+    }
+
+    private fun ensureServersUiInitialized() {
+        if (serversUiInitialized) return
+        setupServers()
+        serversUiInitialized = true
+    }
+
+    private fun warmUpDeferredUiSections() {
+        lifecycleScope.launch {
+            yield()
+            if (!isDestroyed && !isFinishing) {
+                ensureSettingsUiInitialized()
+            }
+            yield()
+            if (!isDestroyed && !isFinishing) {
+                ensureServersUiInitialized()
+            }
+        }
+    }
+
+    private fun renderProfileListState() {
+        if (!::adapter.isInitialized) return
+
+        if (isStartupLoading) {
+            binding.rvProfiles.visibility = View.GONE
+            binding.tvAddProfiles.visibility = View.GONE
+            binding.tvAddHint.visibility = View.VISIBLE
+            binding.tvAddHint.text = getString(R.string.startup_loading_profiles)
+            binding.tvEmptyState.visibility = View.GONE
+            return
+        }
+
+        val isListEmpty = latestDisplayItems.isEmpty()
+        binding.rvProfiles.visibility = if (isListEmpty) View.GONE else View.VISIBLE
+        
+        binding.tvEmptyState.visibility = if (isListEmpty) View.VISIBLE else View.GONE
+        
+        binding.tvAddHint.visibility = if (isListEmpty) View.VISIBLE else View.GONE
+        binding.tvAddHint.text = getString(R.string.hint_add_first_profile)
+        
+        binding.tvAddProfiles.visibility = if (isListEmpty) View.GONE else View.VISIBLE
     }
 
     private fun setupRecyclerView() {
@@ -483,9 +586,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun showManualInputDialog() {
         flare.client.app.util.GlassUtils.showGlassDialog(this, R.layout.dialog_manual_input) { view, dialog ->
-            if (settings.isCustomColorEnabled) {
-                applyAccentToViewTree(view, runtimeAccentColor)
-            }
+            applyAccentToViewTree(view, runtimeAccentColor)
 
             val etInput = view.findViewById<android.widget.EditText>(R.id.et_input)
             val btnCancel = view.findViewById<android.view.View>(R.id.btn_cancel)
@@ -543,6 +644,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupSimpleEditor() {
+        if (simpleEditor != null) return
         val simpleView = binding.root.findViewById<View>(flare.client.app.R.id.layout_simple_editor)
         if (simpleView != null) {
             simpleEditor = flare.client.app.util.SimpleEditorManager(
@@ -571,6 +673,10 @@ class MainActivity : AppCompatActivity() {
             }
         }
         binding.bottomNav.onTabSelected = { index ->
+            when (index) {
+                0 -> ensureSettingsUiInitialized()
+                2 -> ensureServersUiInitialized()
+            }
             if (index != currentTabIndex) {
                 val oldView = getActiveTabView(currentTabIndex)
                 val newView = when (index) {
@@ -1588,13 +1694,35 @@ class MainActivity : AppCompatActivity() {
         return resources.getQuantityString(R.plurals.plural_sites, n)
     }
 
+    private fun isUsageAccessGranted(): Boolean {
+        val appOps = getSystemService(Context.APP_OPS_SERVICE) as android.app.AppOpsManager
+        val mode = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+            appOps.unsafeCheckOpNoThrow(android.app.AppOpsManager.OPSTR_GET_USAGE_STATS, android.os.Process.myUid(), packageName)
+        } else {
+            @Suppress("DEPRECATION")
+            appOps.checkOpNoThrow(android.app.AppOpsManager.OPSTR_GET_USAGE_STATS, android.os.Process.myUid(), packageName)
+        }
+        return mode == android.app.AppOpsManager.MODE_ALLOWED
+    }
+
+    private fun updateAppMonitorService() {
+        val intent = Intent(this, flare.client.app.service.AppMonitorService::class.java)
+        if (settings.isAppTriggerEnabled) {
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                startForegroundService(intent)
+            } else {
+                startService(intent)
+            }
+        } else {
+            stopService(intent)
+        }
+    }
+
     private fun showAppSelectionDialog(allApps: List<AppListItem>) {
         flare.client.app.util.GlassUtils.showGlassDialog(this, R.layout.dialog_app_selection, maxWidthDp = 300, blurRadius = 15f) { view, dialog ->
             val dialogBinding = flare.client.app.databinding.DialogAppSelectionBinding.bind(view)
 
-            if (settings.isCustomColorEnabled) {
-                applyAccentToViewTree(dialogBinding.root, runtimeAccentColor)
-            }
+            applyAccentToViewTree(dialogBinding.root, runtimeAccentColor)
 
         val selectedPackages = settings.splitTunnelingApps.toMutableSet()
         val sitesSet = settings.splitTunnelingSites.toMutableSet()
@@ -1809,6 +1937,59 @@ class MainActivity : AppCompatActivity() {
                 }
         )
 
+        val switchTrigger = dialogBinding.root.findViewById<android.widget.CompoundButton>(R.id.switch_trigger)
+        val btnTriggerHint = dialogBinding.root.findViewById<android.view.View>(R.id.btn_trigger_hint)
+        
+        switchTrigger?.isChecked = settings.isAppTriggerEnabled
+        
+        fun updateTriggerUI() {
+            tabSites?.alpha = 1.0f
+            tabSites?.isEnabled = true
+        }
+        
+        updateTriggerUI()
+        
+        switchTrigger?.setOnCheckedChangeListener { _, isChecked ->
+            if (isChecked && !isUsageAccessGranted()) {
+                switchTrigger.isChecked = false
+                
+                flare.client.app.util.GlassUtils.showGlassDialog(this, R.layout.layout_glass_dialog_content) { view, dialog ->
+                    val tvTitle = view.findViewById<android.widget.TextView>(R.id.tv_dialog_title)
+                    val tvDesc = view.findViewById<android.widget.TextView>(R.id.tv_dialog_text)
+                    val btnClose = view.findViewById<android.view.View>(R.id.btn_close_dialog)
+                    val btnCancel = view.findViewById<android.view.View>(R.id.btn_dialog_cancel)
+                    val btnAction = view.findViewById<android.widget.TextView>(R.id.btn_dialog_action)
+                    
+                    tvTitle?.text = getString(R.string.onboarding_usage_title)
+                    tvDesc?.text = getString(R.string.permission_usage_stats_needed)
+                    
+                    btnAction?.text = getString(R.string.btn_grant)
+                    
+                    applyAccentToViewTree(view, runtimeAccentColor)
+                    
+                    btnAction?.setOnClickListener {
+                        dialog.dismiss()
+                        try {
+                            startActivity(Intent(android.provider.Settings.ACTION_USAGE_ACCESS_SETTINGS).apply {
+                                data = android.net.Uri.fromParts("package", packageName, null)
+                            })
+                        } catch (e: Exception) {
+                            startActivity(Intent(android.provider.Settings.ACTION_USAGE_ACCESS_SETTINGS))
+                        }
+                    }
+                    
+                    btnCancel?.setOnClickListener { dialog.dismiss() }
+                    btnClose?.setOnClickListener { dialog.dismiss() }
+                }
+            } else {
+                updateTriggerUI()
+            }
+        }
+        
+        btnTriggerHint?.setOnClickListener {
+            flare.client.app.util.GlassUtils.showGlassTooltip(it, getString(R.string.trigger_hint))
+        }
+
         dialogBinding.root.findViewById<View>(R.id.btn_cancel_apps)?.setOnClickListener { dialog.dismiss() }
         dialogBinding.root.findViewById<View>(R.id.btn_save_apps)?.setOnClickListener {
             val finalSites = etSites?.text?.toString()?.split("\n")?.map { it.trim() }?.filter { it.isNotEmpty() }?.toSet() ?: emptySet()
@@ -1816,12 +1997,20 @@ class MainActivity : AppCompatActivity() {
             val hasChanged = settings.splitTunnelingApps != selectedPackages ||
                             settings.splitTunnelingSites != finalSites ||
                             settings.splitTunnelingModeApps != tempModeApps ||
-                            settings.splitTunnelingModeSites != tempModeSites
+                            settings.splitTunnelingModeSites != tempModeSites ||
+                            settings.isAppTriggerEnabled != switchTrigger?.isChecked
 
             settings.splitTunnelingApps = selectedPackages
             settings.splitTunnelingSites = finalSites
             settings.splitTunnelingModeApps = tempModeApps
             settings.splitTunnelingModeSites = tempModeSites
+            
+            val triggerChanged = settings.isAppTriggerEnabled != (switchTrigger?.isChecked == true)
+            settings.isAppTriggerEnabled = switchTrigger?.isChecked == true
+            
+            if (triggerChanged) {
+                updateAppMonitorService()
+            }
             
             updateSplitTunnelingDesc()
             if (hasChanged) showSettingsNotification()
@@ -2315,6 +2504,11 @@ class MainActivity : AppCompatActivity() {
         val btnRed         = themeView.findViewById<View>(flare.client.app.R.id.btn_color_red)
         val btnPink        = themeView.findViewById<View>(flare.client.app.R.id.btn_color_pink)
         val btnOrange      = themeView.findViewById<View>(flare.client.app.R.id.btn_color_orange)
+        val btnIndigo      = themeView.findViewById<View>(flare.client.app.R.id.btn_color_indigo)
+        val btnCyan        = themeView.findViewById<View>(flare.client.app.R.id.btn_color_cyan)
+        val btnAmber       = themeView.findViewById<View>(flare.client.app.R.id.btn_color_amber)
+        val btnViolet      = themeView.findViewById<View>(flare.client.app.R.id.btn_color_violet)
+        val btnTeal        = themeView.findViewById<View>(flare.client.app.R.id.btn_color_teal)
 
         val density = resources.displayMetrics.density
 
@@ -2326,7 +2520,12 @@ class MainActivity : AppCompatActivity() {
                 "purple"       to btnPurple,
                 "red"          to btnRed,
                 "pink"         to btnPink,
-                "orange"       to btnOrange
+                "orange"       to btnOrange,
+                "indigo"       to btnIndigo,
+                "cyan"         to btnCyan,
+                "amber"        to btnAmber,
+                "violet"       to btnViolet,
+                "teal"         to btnTeal
             )
             buttonsMap.forEach { (key, btn) ->
                 val color = getColorsForKey(key).first
@@ -2402,6 +2601,11 @@ class MainActivity : AppCompatActivity() {
         btnRed?.setOnClickListener         { onColorSelected("red") }
         btnPink?.setOnClickListener        { onColorSelected("pink") }
         btnOrange?.setOnClickListener      { onColorSelected("orange") }
+        btnIndigo?.setOnClickListener      { onColorSelected("indigo") }
+        btnCyan?.setOnClickListener        { onColorSelected("cyan") }
+        btnAmber?.setOnClickListener       { onColorSelected("amber") }
+        btnViolet?.setOnClickListener      { onColorSelected("violet") }
+        btnTeal?.setOnClickListener        { onColorSelected("teal") }
     }
 
     private fun applyThemeWithAnimation(triggerView: View) {
@@ -2532,6 +2736,7 @@ class MainActivity : AppCompatActivity() {
     private fun restorePendingNavScreen() {
         val screen = settings.pendingNavScreen
         if (screen.isEmpty()) return
+        ensureSettingsUiInitialized()
         settings.pendingNavScreen = ""
         themeChangedJustNow = false
 
@@ -2620,6 +2825,11 @@ class MainActivity : AppCompatActivity() {
         "red"    -> Pair(COLOR_RED,    COLOR_RED_END)
         "pink"   -> Pair(COLOR_PINK,   COLOR_PINK_END)
         "orange" -> Pair(COLOR_ORANGE, COLOR_ORANGE_END)
+        "indigo" -> Pair(COLOR_INDIGO, COLOR_INDIGO_END)
+        "cyan"   -> Pair(COLOR_CYAN,   COLOR_CYAN_END)
+        "amber"  -> Pair(COLOR_AMBER,  COLOR_AMBER_END)
+        "violet" -> Pair(COLOR_VIOLET, COLOR_VIOLET_END)
+        "teal"   -> Pair(COLOR_TEAL,   COLOR_TEAL_END)
         else     -> Pair(COLOR_DEFAULT, COLOR_DEFAULT_END)
     }
 
@@ -2702,6 +2912,8 @@ class MainActivity : AppCompatActivity() {
                 bg.setColor(androidx.core.graphics.ColorUtils.setAlphaComponent(accent, 13))
                 view.background = bg
             }
+        } else if (view.tag == "accent_solid") {
+            view.backgroundTintList = android.content.res.ColorStateList.valueOf(accent)
         }
 
         when (view) {
@@ -2717,6 +2929,22 @@ class MainActivity : AppCompatActivity() {
                     )
                 )
                 view.trackTintList = trackCsl
+            }
+            is com.google.android.material.materialswitch.MaterialSwitch -> {
+                val trackCsl = android.content.res.ColorStateList(
+                    arrayOf(
+                        intArrayOf(android.R.attr.state_checked),
+                        intArrayOf()
+                    ),
+                    intArrayOf(
+                        accent,
+                        android.graphics.Color.argb(80, 128, 128, 128)
+                    )
+                )
+                view.trackTintList = trackCsl
+                if (view is flare.client.app.ui.widget.GlassyMaterialSwitch) {
+                    view.trackDecorationTintList = trackCsl
+                }
             }
             is com.google.android.material.slider.Slider -> {
                 val csl = android.content.res.ColorStateList.valueOf(accent)
@@ -2939,17 +3167,35 @@ class MainActivity : AppCompatActivity() {
 
         lifecycleScope.launch {
             viewModel.displayItems.collect { items ->
+                latestDisplayItems = items
                 adapter.submitList(items)
-                val isListEmpty = items.isEmpty()
-                binding.rvProfiles.visibility = if (isListEmpty) View.GONE else View.VISIBLE
-                binding.tvAddHint.visibility = if (isListEmpty) View.VISIBLE else View.GONE
-                binding.tvAddProfiles.visibility = if (isListEmpty) View.GONE else View.VISIBLE
+                renderProfileListState()
+            }
+        }
+
+        lifecycleScope.launch {
+            viewModel.isStartupLoading.collect { loading ->
+                isStartupLoading = loading
+                renderProfileListState()
             }
         }
 
         lifecycleScope.launch {
             viewModel.isAnySubscriptionExpanded.collect { isExpanded ->
                 binding.layoutBottomActions.visibility = if (isExpanded) View.GONE else View.VISIBLE
+            }
+        }
+
+        lifecycleScope.launch {
+            viewModel.selectedProfileId.collect { id ->
+                if (id != null) {
+                    if (settings.isAutostartEnabled &&
+                        viewModel.connectionState.value == MainViewModel.ConnectionState.DISCONNECTED
+                    ) {
+                        viewModel.connectOrDisconnect()
+                    }
+                    this@launch.coroutineContext[kotlinx.coroutines.Job]?.cancel()
+                }
             }
         }
 
@@ -3002,6 +3248,8 @@ class MainActivity : AppCompatActivity() {
             viewModel.editingProfile.collect { profile ->
                 if (profile != null) {
                     if (!profile.uri.startsWith("internal://json")) {
+                        ensureSimpleEditorInflated()
+                        setupSimpleEditor()
                         binding.bottomNav.hide()
                         binding.layoutJsonEditor.visibility = View.GONE
                         val simpleView = findViewById<View>(flare.client.app.R.id.layout_simple_editor)
@@ -3040,9 +3288,7 @@ class MainActivity : AppCompatActivity() {
         flare.client.app.util.GlassUtils.showGlassDialog(this, R.layout.dialog_edit_subscription) { view, dialog ->
             val dialogBinding = flare.client.app.databinding.DialogEditSubscriptionBinding.bind(view)
 
-            if (settings.isCustomColorEnabled) {
-                applyAccentToViewTree(dialogBinding.root, runtimeAccentColor)
-            }
+            applyAccentToViewTree(dialogBinding.root, runtimeAccentColor)
 
         dialogBinding.etSubName.setText(sub.name)
         dialogBinding.etSubUrl.setText(sub.url)
@@ -3174,6 +3420,15 @@ class MainActivity : AppCompatActivity() {
         b.btnPermissionBattery.setOnClickListener {
             requestBatteryOptimizationExemption()
         }
+        b.btnPermissionUsage.setOnClickListener {
+            try {
+                usagePermLauncher.launch(Intent(android.provider.Settings.ACTION_USAGE_ACCESS_SETTINGS).apply {
+                    data = android.net.Uri.fromParts("package", packageName, null)
+                })
+            } catch (e: Exception) {
+                usagePermLauncher.launch(Intent(android.provider.Settings.ACTION_USAGE_ACCESS_SETTINGS))
+            }
+        }
 
         b.btnFragYes.setOnClickListener {
             settings.isFragmentationEnabled = true
@@ -3221,6 +3476,8 @@ class MainActivity : AppCompatActivity() {
         val isIgnoring = (getSystemService(Context.POWER_SERVICE) as android.os.PowerManager)
             .isIgnoringBatteryOptimizations(packageName)
         updateOnboardingPermissionState(b.btnPermissionBattery, b.ivBatteryCheck, isIgnoring)
+
+        updateOnboardingPermissionState(b.btnPermissionUsage, b.ivUsageCheck, isUsageAccessGranted())
     }
 
     private fun updateOnboardingPermissionState(view: View, checkIcon: View, isGranted: Boolean) {
@@ -3320,7 +3577,7 @@ class MainActivity : AppCompatActivity() {
             .setDuration(400)
             .withEndAction {
                 binding.layoutOnboarding.root.visibility = View.GONE
-                initializeMainUI()
+                scheduleMainUiInitialization()
                 binding.bottomNav.show()
                 binding.bottomNav.expandToTabs()
             }.start()
@@ -3389,6 +3646,16 @@ class MainActivity : AppCompatActivity() {
         const val COLOR_PINK_END    = 0xFFFF6FA1.toInt()
         const val COLOR_ORANGE      = 0xFFFF9F0A.toInt()
         const val COLOR_ORANGE_END  = 0xFFFFB340.toInt()
+        const val COLOR_INDIGO      = 0xFF5E5CE6.toInt()
+        const val COLOR_INDIGO_END  = 0xFF7D7AFF.toInt()
+        const val COLOR_CYAN        = 0xFF64D2FF.toInt()
+        const val COLOR_CYAN_END    = 0xFF5AC8FA.toInt()
+        const val COLOR_AMBER       = 0xFFFFD60A.toInt()
+        const val COLOR_AMBER_END   = 0xFFFFE082.toInt()
+        const val COLOR_VIOLET      = 0xFFBF5AF2.toInt()
+        const val COLOR_VIOLET_END  = 0xFFD6A0FF.toInt()
+        const val COLOR_TEAL        = 0xFF30B0C7.toInt()
+        const val COLOR_TEAL_END    = 0xFF62D2E4.toInt()
     }
     private fun formatSupportUrl(url: String): String {
         return try {
@@ -3425,6 +3692,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
     private fun setupJournal() {
+        ensureJournalInflated()
         val journalContainer = findViewById<View>(flare.client.app.R.id.layout_journal_container) ?: return
         val baseSettings = findViewById<View>(flare.client.app.R.id.layout_settings_base_container) ?: return
         val tvContent = journalContainer.findViewById<android.widget.TextView>(flare.client.app.R.id.tv_journal_content)
@@ -3565,5 +3833,51 @@ class MainActivity : AppCompatActivity() {
                 delay(1500)
             }
         }
+    }
+
+    private fun ensureSettingsDetailViewsInflated() {
+        inflateStubIfNeeded(
+            flare.client.app.R.id.stub_settings_base_container,
+            flare.client.app.R.id.layout_settings_base_container
+        )
+        inflateStubIfNeeded(
+            flare.client.app.R.id.stub_settings_subscriptions_container,
+            flare.client.app.R.id.layout_settings_subscriptions_container
+        )
+        inflateStubIfNeeded(
+            flare.client.app.R.id.stub_settings_theme_container,
+            flare.client.app.R.id.layout_settings_theme_container
+        )
+        inflateStubIfNeeded(
+            flare.client.app.R.id.stub_settings_language_container,
+            flare.client.app.R.id.layout_settings_language_container
+        )
+    }
+
+    private fun ensureSimpleEditorInflated(): View? {
+        return inflateStubIfNeeded(
+            flare.client.app.R.id.stub_simple_editor,
+            flare.client.app.R.id.layout_simple_editor
+        )
+    }
+
+    private fun ensureJournalInflated(): View? {
+        return inflateStubIfNeeded(
+            flare.client.app.R.id.stub_journal_container,
+            flare.client.app.R.id.layout_journal_container
+        )
+    }
+
+    private fun inflateStubIfNeeded(@IdRes stubId: Int, @IdRes inflatedId: Int): View? {
+        findViewById<View>(inflatedId)?.let { return it }
+        val stub = findViewById<ViewStub>(stubId) ?: return findViewById(inflatedId)
+        val inflated = stub.inflate()
+        inflated.visibility = View.GONE
+        applyAccentToViewTree(inflated, runtimeAccentColor)
+        if (settings.isCustomColorEnabled) {
+            applyAccentColorsToUI(runtimeAccentColor, runtimeAccentEndColor)
+        }
+        ViewCompat.requestApplyInsets(binding.root)
+        return inflated
     }
 }
