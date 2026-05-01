@@ -40,7 +40,8 @@ object ClipboardParser {
         return when {
             trimmed.startsWith("{") && trimmed.endsWith("}") -> parseFullJson(context, trimmed)
             singleSchemes.any { trimmed.startsWith("$it://") } -> parseSingleProxy(context, trimmed)
-            trimmed.startsWith("http://") || trimmed.startsWith("https://") -> parseSubscriptionUrl(context, trimmed, hwid, deviceName, androidVersion)
+            trimmed.startsWith("http://") -> ParseResult.Error(context.getString(R.string.error_subscription_https_required))
+            trimmed.startsWith("https://") -> parseSubscriptionUrl(context, trimmed, hwid, deviceName, androidVersion)
             else -> ParseResult.Error(context.getString(R.string.error_invalid_format))
         }
     }

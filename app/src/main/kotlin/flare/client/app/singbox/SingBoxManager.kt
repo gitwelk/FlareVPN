@@ -60,13 +60,14 @@ object SingBoxManager {
 
             val lf = File(context.filesDir, "sing-box.log")
             logFile = lf
+            val shouldWriteCoreLogs = settings.isCoreLogEnabled && settings.coreLogLevel != "none"
             try {
-                if (settings.isCoreLogEnabled) {
+                if (shouldWriteCoreLogs) {
                     lf.delete()
                 }
             } catch (_: Exception) {}
             
-            if (settings.isCoreLogEnabled) {
+            if (shouldWriteCoreLogs) {
                 Log.i(TAG, "sing-box log file: ${lf.absolutePath}")
                 try {
                     Libbox.redirectStderr(lf.absolutePath)

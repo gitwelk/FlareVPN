@@ -432,7 +432,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     delay(delayTime)
                 }
                 if (isActive) {
-                    refreshAllSubscriptions()
+                    try {
+                        refreshAllSubscriptions()
+                    } catch (e: Exception) {
+                        Log.e("MainViewModel", "Auto-update failed: ${e.message}")
+                        
+                        delay(60000L)
+                    }
                 }
             }
         }
@@ -724,6 +730,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 app.getString(R.string.sub_update_error),
                 4
             )
+            
+            delay(60000L)
         }
     }
 

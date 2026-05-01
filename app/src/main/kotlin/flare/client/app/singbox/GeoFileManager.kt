@@ -3,6 +3,7 @@ package flare.client.app.singbox
 import android.content.Context
 import android.util.Log
 import java.io.File
+import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
 
@@ -53,13 +54,26 @@ object GeoFileManager {
                 readTimeout    = 60_000
                 setRequestProperty("User-Agent", "Flare-Client/1.0")
             }
-            conn.inputStream.use { input ->
-                tmp.outputStream().use { output ->
-                    input.copyTo(output)
+            try {
+                if (conn.responseCode != HttpURLConnection.HTTP_OK) {
+                    throw IOException("HTTP ${conn.responseCode}")
                 }
+
+                val bytesCopied = conn.inputStream.use { input ->
+                    tmp.outputStream().use { output ->
+                        input.copyTo(output)
+                    }
+                }
+                if (bytesCopied <= 0L) {
+                    throw IOException("Empty geo file")
+                }
+            } finally {
+                conn.disconnect()
             }
-            conn.disconnect()
-            tmp.renameTo(dest)
+
+            if (!tmp.renameTo(dest)) {
+                throw IOException("Failed to replace ${dest.name}")
+            }
             Log.i(TAG, "${dest.name} downloaded successfully (${dest.length()} bytes)")
         } catch (e: Exception) {
             Log.w(TAG, "Failed to download ${dest.name}: ${e.message}")

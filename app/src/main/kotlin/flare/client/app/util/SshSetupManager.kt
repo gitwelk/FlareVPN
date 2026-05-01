@@ -6,7 +6,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.withContext
 import net.schmizz.sshj.SSHClient
-import net.schmizz.sshj.transport.verification.PromiscuousVerifier
+import net.schmizz.sshj.transport.verification.HostKeyVerifier
+import java.security.MessageDigest
 import java.util.UUID
 import java.security.SecureRandom
 import java.security.Security
@@ -25,12 +26,30 @@ object SecurityInitializer {
 }
 
 class SshSetupManager(private val context: Context) {
+    private val prefs = context.getSharedPreferences("flare_settings", Context.MODE_PRIVATE)
 
     private val _progress = MutableStateFlow(0)
     val progress: StateFlow<Int> = _progress
 
     private val _status = MutableStateFlow("")
     val status: StateFlow<String> = _status
+
+    private inner class PinnedHostKeyVerifier : HostKeyVerifier {
+        var observedFingerprint: String? = null
+
+        override fun findExistingAlgorithms(hostname: String?, port: Int): MutableList<String> =
+            mutableListOf()
+
+        override fun verify(hostname: String?, port: Int, key: java.security.PublicKey?): Boolean {
+            if (hostname.isNullOrBlank() || key == null) return false
+
+            val fingerprint = key.fingerprintSha256()
+            observedFingerprint = fingerprint
+            val prefKey = hostKeyPrefKey(hostname, port)
+            val expectedFingerprint = prefs.getString(prefKey, null)
+            return expectedFingerprint == null || expectedFingerprint == fingerprint
+        }
+    }
 
     private fun SSHClient.exec(cmd: String): String {
         var out = ""
@@ -65,11 +84,15 @@ class SshSetupManager(private val context: Context) {
     ): String? = withContext(Dispatchers.IO) {
         SecurityInitializer.init()
         val ssh = SSHClient()
+        val hostVerifier = PinnedHostKeyVerifier()
         try {
             _status.value = context.getString(R.string.ssh_status_connecting)
-            ssh.addHostKeyVerifier(PromiscuousVerifier())
+            ssh.addHostKeyVerifier(hostVerifier)
             ssh.connect(host, sshPort)
             ssh.authPassword(user, pass)
+            hostVerifier.observedFingerprint?.let { fingerprint ->
+                prefs.edit().putString(hostKeyPrefKey(host, sshPort), fingerprint).apply()
+            }
             _progress.value = 10
 
             var xrayPath = ssh.exec("command -v xray || ( [ -x /usr/local/bin/xray ] && echo /usr/local/bin/xray ) || ( [ -x /usr/bin/xray ] && echo /usr/bin/xray)").lines().firstOrNull { it.isNotBlank() }?.trim() ?: ""
@@ -199,5 +222,16 @@ class SshSetupManager(private val context: Context) {
         } finally {
             try { ssh.disconnect() } catch (_: Exception) {}
         }
+    }
+
+    private fun hostKeyPrefKey(host: String, port: Int): String = "ssh_host_key_$host:$port"
+
+    private fun java.security.PublicKey.fingerprintSha256(): String {
+        val digest = MessageDigest.getInstance("SHA-256").digest(encoded)
+        val encodedDigest = android.util.Base64.encodeToString(
+            digest,
+            android.util.Base64.NO_WRAP
+        ).trimEnd('=')
+        return "SHA256:$encodedDigest"
     }
 }

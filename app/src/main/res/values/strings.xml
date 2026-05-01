@@ -96,7 +96,7 @@
     <string name="sites_hint">www.com\nwww2.com</string>
     <string name="label_mode">Режим</string>
     <string name="trigger_label">Триггер</string>
-    <string name="trigger_hint">Данный параметр делает так, что VPN подключается только при использовании определенных приложений\nСписок доменов продолжает работать вместе с Триггером</string>
+    <string name="trigger_hint">Данный параметр делает так, что VPN подключается только при использовании определенных приложений</string>
     <string name="app_monitor_active">Триггер активен!</string>
     <string name="trigger_vpn_permission_channel">Разрешение VPN для триггера</string>
     <string name="trigger_vpn_permission_title">Триггеру нужно разрешение VPN</string>
@@ -308,7 +308,8 @@
     <string name="settings_label_send_hwid">Передавать HWID</string>
     <string name="settings_desc_hwid">HWID - идентификатор для привязки подписки к вашему устройству. Позволяет повторно импортировать подписку без расхода лимита устройств. Данные не передаются.</string>
     <string name="error_open_settings">Не удалось открыть настройки системы</string>
-    <string name="error_invalid_format">Неверный формат. Поддерживаются: vless://, vmess://, ss://, trojan://, http(s):// и JSON</string>
+    <string name="error_invalid_format">Неверный формат. Поддерживаются: vless://, vmess://, ss://, trojan://, https:// и JSON</string>
+    <string name="error_subscription_https_required">Ссылка на подписку должна использовать HTTPS</string>
     <string name="error_parsing">Ошибка парсинга: %s</string>
     <string name="error_json">Ошибка JSON: %s</string>
     <string name="error_subscription_empty">Подписка пуста</string>

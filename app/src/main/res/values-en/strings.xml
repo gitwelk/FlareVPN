@@ -94,7 +94,7 @@
     <string name="sites_hint">www.com\nwww2.com</string>
     <string name="label_mode">Mode</string>
     <string name="trigger_label">Trigger</string>
-    <string name="trigger_hint">This parameter makes the VPN connect only when using certain apps\nThe domain list continues to work together with Trigger</string>
+    <string name="trigger_hint">This parameter makes the VPN connect only when using certain apps</string>
     <string name="app_monitor_active">Trigger is active!</string>
     <string name="trigger_vpn_permission_channel">Trigger VPN permission</string>
     <string name="trigger_vpn_permission_title">Trigger needs VPN permission</string>
@@ -302,7 +302,8 @@
     <string name="settings_label_send_hwid">Send HWID</string>
     <string name="settings_desc_hwid">HWID is an identifier to link your subscription to your device. Thanks to it, re-importing is not counted as a new connection. All data is stored locally and is not transmitted anywhere else.</string>
     <string name="error_open_settings">Failed to open system settings</string>
-    <string name="error_invalid_format">Invalid format. Supported: vless://, vmess://, ss://, trojan://, http(s):// and JSON</string>
+    <string name="error_invalid_format">Invalid format. Supported: vless://, vmess://, ss://, trojan://, https:// and JSON</string>
+    <string name="error_subscription_https_required">Subscription URL must use HTTPS</string>
     <string name="error_parsing">Parsing error: %s</string>
     <string name="error_json">JSON error: %s</string>
     <string name="error_subscription_empty">Subscription is empty</string>

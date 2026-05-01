@@ -14,8 +14,8 @@
     <color name="white">#F7F8FA</color>
     <color name="white_10">#1AF7F8FA</color>
     <color name="glass_stroke">#80000000</color>
-    <color name="traffic_text_shadow">@android:color/transparent</color>
-    <color name="traffic_text_color">#707991</color>
+    <color name="traffic_text_shadow">#40000000</color>
+    <color name="traffic_text_color">#FFFFFF</color>
 
     <color name="divider_color">#18000000</color>
     <color name="menu_text_color">#1A1C1E</color>
@@ -52,4 +52,5 @@
     <color name="divider_profile_selected">#18000000</color>
     <color name="slider_thumb_stroke">#00000000</color>
     <color name="glass_input_bg">#1A000000</color>
+    <color name="traffic_progress">#FF5722</color>
 </resources>
